@@ -1,0 +1,1255 @@
+openapi: '3.0.3'
+
+info:
+  title: Kişisel Finans API
+  version: 1.0.0
+  description: |
+    Flutter tabanlı kişisel finans uygulamasının Go backend API'si.
+
+    ## Authentication
+    Korumalı endpoint'ler Bearer JWT token gerektirir.
+    Token'ı `POST /auth/login` endpoint'inden alın.
+
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    - **Public** (token gerekmez): `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`
+    - **Protected** (token zorunlu): Diğer tüm endpoint'ler
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development
+  - url: https://api.finance.app/v1
+    description: Production
+
+tags:
+  - name: Auth
+    description: Kayıt, giriş ve token işlemleri
+  - name: User
+    description: Kullanıcı profili yönetimi
+  - name: Transactions
+    description: Gelir ve gider işlemleri
+  - name: Budgets
+    description: Kategori bazlı bütçe yönetimi
+  - name: Categories
+    description: İşlem kategorileri
+  - name: Dashboard
+    description: Ana sayfa özet verileri
+
+paths:
+
+  # ─────────────────────────────────────────────
+  # AUTH
+  # ─────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Yeni kullanıcı kaydı
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: Ali Yılmaz
+              email: ali@example.com
+              password: Gizli123!
+      responses:
+        '201':
+          description: Kayıt başarılı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              example:
+                message: Kayıt başarılı
+                user_id: 42
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Kullanıcı girişi
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: ali@example.com
+              password: Gizli123!
+      responses:
+        '200':
+          description: Giriş başarılı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                token_type: Bearer
+                expires_in: 3600
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Access token yenile
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            example:
+              refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token yenilendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Oturumu sonlandır
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Çıkış başarılı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Çıkış başarılı
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # USER / PROFILE
+  # ─────────────────────────────────────────────
+
+  /users/me:
+    get:
+      tags: [User]
+      summary: Profil bilgilerini getir
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profil bilgileri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 42
+                name: Ali Yılmaz
+                email: ali@example.com
+                currency: TRY
+                created_at: '2026-01-15T10:00:00Z'
+                updated_at: '2026-03-01T08:30:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [User]
+      summary: Profil güncelle
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              name: Ali Yılmaz
+              currency: USD
+      responses:
+        '200':
+          description: Profil güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [User]
+      summary: Hesabı sil
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Hesap silindi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Hesap silindi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/me/password:
+    put:
+      tags: [User]
+      summary: Şifre değiştir
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              old_password: EskiSifre123!
+              new_password: YeniSifre456!
+      responses:
+        '200':
+          description: Şifre değiştirildi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Şifre başarıyla değiştirildi
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # TRANSACTIONS
+  # ─────────────────────────────────────────────
+
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: İşlem listesi
+      operationId: listTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: false
+          description: İşlem türüne göre filtrele
+          schema:
+            type: string
+            enum: [income, expense]
+        - name: category_id
+          in: query
+          required: false
+          description: Kategoriye göre filtrele
+          schema:
+            type: integer
+            example: 3
+        - name: month
+          in: query
+          required: false
+          description: Aya göre filtrele (YYYY-MM)
+          schema:
+            type: string
+            example: '2026-03'
+        - name: page
+          in: query
+          required: false
+          description: Sayfa numarası (varsayılan 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Sayfa başına kayıt sayısı (varsayılan 20)
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: İşlem listesi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+              example:
+                data:
+                  - id: 101
+                    user_id: 42
+                    amount: 250.00
+                    type: expense
+                    category_id: 3
+                    category:
+                      id: 3
+                      name: Market
+                      icon: shopping_cart
+                      type: expense
+                      is_default: true
+                    description: Market alışverişi
+                    date: '2026-03-10'
+                    created_at: '2026-03-10T14:22:00Z'
+                meta:
+                  total: 87
+                  page: 1
+                  limit: 20
+                  total_pages: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Transactions]
+      summary: Yeni işlem oluştur
+      operationId: createTransaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+            example:
+              amount: 250.00
+              type: expense
+              category_id: 3
+              description: Market alışverişi
+              date: '2026-03-10'
+      responses:
+        '201':
+          description: İşlem oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: İşlem detayı
+      operationId: getTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: İşlem detayı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Transactions]
+      summary: İşlemi güncelle
+      operationId: updateTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionRequest'
+            example:
+              amount: 300.00
+              description: Market ve fırın
+      responses:
+        '200':
+          description: İşlem güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Transactions]
+      summary: İşlemi sil
+      operationId: deleteTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: İşlem silindi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # BUDGETS
+  # ─────────────────────────────────────────────
+
+  /budgets:
+    get:
+      tags: [Budgets]
+      summary: Bütçe listesi
+      operationId: listBudgets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          description: Aya göre filtrele (YYYY-MM) — boş bırakılırsa mevcut ay
+          schema:
+            type: string
+            example: '2026-03'
+      responses:
+        '200':
+          description: Bütçe listesi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetListResponse'
+              example:
+                month: '2026-03'
+                data:
+                  - id: 7
+                    user_id: 42
+                    category_id: 3
+                    category:
+                      id: 3
+                      name: Market
+                      icon: shopping_cart
+                      type: expense
+                      is_default: true
+                    limit: 1500.00
+                    spent: 870.00
+                    remaining: 630.00
+                    percent_used: 58.0
+                    month: '2026-03'
+                    created_at: '2026-03-01T08:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Budgets]
+      summary: Yeni bütçe oluştur
+      operationId: createBudget
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBudgetRequest'
+            example:
+              category_id: 3
+              limit: 1500.00
+              month: '2026-03'
+      responses:
+        '201':
+          description: Bütçe oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /budgets/{id}:
+    put:
+      tags: [Budgets]
+      summary: Bütçeyi güncelle
+      operationId: updateBudget
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBudgetRequest'
+            example:
+              limit: 2000.00
+      responses:
+        '200':
+          description: Bütçe güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Budgets]
+      summary: Bütçeyi sil
+      operationId: deleteBudget
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: Bütçe silindi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # CATEGORIES
+  # ─────────────────────────────────────────────
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: Kategori listesi
+      operationId: listCategories
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: false
+          description: Türe göre filtrele
+          schema:
+            type: string
+            enum: [income, expense]
+      responses:
+        '200':
+          description: Kategori listesi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+              example:
+                data:
+                  - id: 1
+                    name: Maaş
+                    icon: payments
+                    type: income
+                    is_default: true
+                  - id: 3
+                    name: Market
+                    icon: shopping_cart
+                    type: expense
+                    is_default: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Categories]
+      summary: Özel kategori oluştur
+      operationId: createCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+            example:
+              name: Spor
+              icon: fitness_center
+              type: expense
+      responses:
+        '201':
+          description: Kategori oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /categories/{id}:
+    put:
+      tags: [Categories]
+      summary: Kategoriyi güncelle
+      operationId: updateCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+            example:
+              name: Spor & Sağlık
+              icon: sports_gymnastics
+      responses:
+        '200':
+          description: Kategori güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Categories]
+      summary: Kategoriyi sil
+      operationId: deleteCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: Kategori silindi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # DASHBOARD
+  # ─────────────────────────────────────────────
+
+  /dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Ana sayfa özet verileri
+      operationId: getDashboardSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          description: Özet ayı (YYYY-MM) — boş bırakılırsa mevcut ay
+          schema:
+            type: string
+            example: '2026-03'
+      responses:
+        '200':
+          description: Özet veriler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+              example:
+                month: '2026-03'
+                balance: 4250.00
+                total_income: 8500.00
+                total_expense: 4250.00
+                budget_summary:
+                  - category_id: 3
+                    category_name: Market
+                    category_icon: shopping_cart
+                    limit: 1500.00
+                    spent: 870.00
+                    percent_used: 58.0
+                recent_transactions:
+                  - id: 101
+                    amount: 250.00
+                    type: expense
+                    category:
+                      id: 3
+                      name: Market
+                      icon: shopping_cart
+                      type: expense
+                      is_default: true
+                    description: Market alışverişi
+                    date: '2026-03-10'
+                    created_at: '2026-03-10T14:22:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ═════════════════════════════════════════════════
+# COMPONENTS
+# ═════════════════════════════════════════════════
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token. POST /auth/login endpoint'inden alınır.
+        Header: Authorization: Bearer <token>
+
+  parameters:
+    IDParam:
+      name: id
+      in: path
+      required: true
+      description: Kaydın benzersiz ID'si
+      schema:
+        type: integer
+        example: 1
+
+  responses:
+    BadRequest:
+      description: Geçersiz istek verisi
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: validation_error
+            message: Geçersiz e-posta formatı
+            details:
+              email: Geçerli bir e-posta adresi girin
+              password: Şifre en az 8 karakter olmalıdır
+
+    Unauthorized:
+      description: Token eksik, geçersiz veya süresi dolmuş
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: unauthorized
+            message: Geçersiz veya süresi dolmuş token
+
+    NotFound:
+      description: Kayıt bulunamadı
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: not_found
+            message: İstenen kayıt bulunamadı
+
+    Conflict:
+      description: Kayıt zaten mevcut
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: conflict
+            message: Bu e-posta adresi zaten kayıtlı
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Kullanıcının tam adı
+          example: Ali Yılmaz
+        email:
+          type: string
+          format: email
+          description: Giriş için kullanılacak e-posta
+          example: ali@example.com
+        password:
+          type: string
+          minLength: 8
+          description: Min 8 karakter
+          example: Gizli123!
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: ali@example.com
+        password:
+          type: string
+          example: Gizli123!
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Korumalı endpoint'lerde kullanılacak JWT token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          description: Access token yenilemek için kullanılır
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Saniye cinsinden geçerlilik süresi
+          example: 3600
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Kayıt başarılı
+        user_id:
+          type: integer
+          example: 42
+
+    # ── User ──────────────────────────────────────
+    User:
+      type: object
+      description: password_hash hiçbir zaman response'ta dönmez
+      properties:
+        id:
+          type: integer
+          example: 42
+        name:
+          type: string
+          example: Ali Yılmaz
+        email:
+          type: string
+          format: email
+          example: ali@example.com
+        currency:
+          type: string
+          description: Tercih edilen para birimi (ISO 4217)
+          example: TRY
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-01-15T10:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-03-01T08:30:00Z'
+
+    UpdateProfileRequest:
+      type: object
+      description: Tüm field'lar opsiyonel — sadece değiştirilecek olanlar gönderilir
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Ali Yılmaz
+        currency:
+          type: string
+          description: ISO 4217 para birimi kodu
+          example: USD
+
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties:
+        old_password:
+          type: string
+          description: Mevcut şifre
+          example: EskiSifre123!
+        new_password:
+          type: string
+          minLength: 8
+          description: Min 8 karakter
+          example: YeniSifre456!
+
+    # ── Transaction ───────────────────────────────
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        user_id:
+          type: integer
+          example: 42
+        amount:
+          type: number
+          format: double
+          description: İşlem tutarı — her zaman pozitif, yön type ile belirlenir
+          example: 250.00
+        type:
+          type: string
+          enum: [income, expense]
+          example: expense
+        category_id:
+          type: integer
+          example: 3
+        category:
+          $ref: '#/components/schemas/Category'
+        description:
+          type: string
+          nullable: true
+          description: Kullanıcı notu
+          example: Market alışverişi
+        date:
+          type: string
+          format: date
+          description: YYYY-MM-DD formatı
+          example: '2026-03-10'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-10T14:22:00Z'
+
+    CreateTransactionRequest:
+      type: object
+      required: [amount, type, category_id, date]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Her zaman pozitif
+          example: 250.00
+        type:
+          type: string
+          enum: [income, expense]
+          example: expense
+        category_id:
+          type: integer
+          example: 3
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
+          example: Market alışverişi
+        date:
+          type: string
+          format: date
+          description: YYYY-MM-DD formatı
+          example: '2026-03-10'
+
+    UpdateTransactionRequest:
+      type: object
+      description: Tüm field'lar opsiyonel — sadece değiştirilecek olanlar gönderilir
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 300.00
+        category_id:
+          type: integer
+          example: 3
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
+          example: Market ve fırın
+        date:
+          type: string
+          format: date
+          example: '2026-03-10'
+
+    TransactionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Toplam kayıt sayısı
+              example: 87
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total_pages:
+              type: integer
+              example: 5
+
+    # ── Budget ────────────────────────────────────
+    Budget:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        user_id:
+          type: integer
+          example: 42
+        category_id:
+          type: integer
+          example: 3
+        category:
+          $ref: '#/components/schemas/Category'
+        limit:
+          type: number
+          format: double
+          description: Aylık harcama limiti
+          example: 1500.00
+        spent:
+          type: number
+          format: double
+          description: O ay harcanan tutar (hesaplanır)
+          example: 870.00
+        remaining:
+          type: number
+          format: double
+          description: Kalan bütçe — limit eksi spent (hesaplanır)
+          example: 630.00
+        percent_used:
+          type: number
+          format: double
+          description: Kullanım yüzdesi 0-100 (hesaplanır)
+          example: 58.0
+        month:
+          type: string
+          description: Geçerli olduğu ay (YYYY-MM)
+          example: '2026-03'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-01T08:00:00Z'
+
+    CreateBudgetRequest:
+      type: object
+      required: [category_id, limit, month]
+      properties:
+        category_id:
+          type: integer
+          example: 3
+        limit:
+          type: number
+          format: double
+          minimum: 1.00
+          example: 1500.00
+        month:
+          type: string
+          description: YYYY-MM formatı
+          example: '2026-03'
+
+    UpdateBudgetRequest:
+      type: object
+      required: [limit]
+      properties:
+        limit:
+          type: number
+          format: double
+          minimum: 1.00
+          example: 2000.00
+
+    BudgetListResponse:
+      type: object
+      properties:
+        month:
+          type: string
+          example: '2026-03'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Budget'
+
+    # ── Category ──────────────────────────────────
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: Market
+        icon:
+          type: string
+          nullable: true
+          description: Flutter icon adı veya emoji
+          example: shopping_cart
+        type:
+          type: string
+          enum: [income, expense]
+          example: expense
+        is_default:
+          type: boolean
+          description: Sistem varsayılan kategorisi mi — varsayılanlar silinemez
+          example: true
+
+    CreateCategoryRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          example: Spor
+        icon:
+          type: string
+          nullable: true
+          example: fitness_center
+        type:
+          type: string
+          enum: [income, expense]
+          example: expense
+
+    UpdateCategoryRequest:
+      type: object
+      description: Tüm field'lar opsiyonel
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          example: Spor & Sağlık
+        icon:
+          type: string
+          nullable: true
+          example: sports_gymnastics
+
+    # ── Dashboard ─────────────────────────────────
+    DashboardSummary:
+      type: object
+      properties:
+        month:
+          type: string
+          example: '2026-03'
+        balance:
+          type: number
+          format: double
+          description: Seçili ay için net bakiye
+          example: 4250.00
+        total_income:
+          type: number
+          format: double
+          description: Seçili ayın toplam geliri
+          example: 8500.00
+        total_expense:
+          type: number
+          format: double
+          description: Seçili ayın toplam gideri
+          example: 4250.00
+        budget_summary:
+          type: array
+          description: Seçili aya ait bütçe özetleri
+          items:
+            type: object
+            properties:
+              category_id:
+                type: integer
+                example: 3
+              category_name:
+                type: string
+                example: Market
+              category_icon:
+                type: string
+                example: shopping_cart
+              limit:
+                type: number
+                format: double
+                example: 1500.00
+              spent:
+                type: number
+                format: double
+                example: 870.00
+              percent_used:
+                type: number
+                format: double
+                example: 58.0
+        recent_transactions:
+          type: array
+          description: Son işlemler
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+    # ── Shared ────────────────────────────────────
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: İşlem başarıyla tamamlandı
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Makine tarafından okunabilir hata kodu
+          example: validation_error
+        message:
+          type: string
+          description: İnsan tarafından okunabilir açıklama
+          example: Geçersiz e-posta formatı
+        details:
+          type: object
+          nullable: true
+          description: Field bazlı hata detayları — sadece validation hatalarında döner
+          additionalProperties:
+            type: string
+          example:
+            email: Geçerli bir e-posta adresi girin
+            password: Şifre en az 8 karakter olmalıdır
