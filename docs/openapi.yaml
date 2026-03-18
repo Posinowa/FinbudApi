@@ -208,14 +208,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        '204':
           description: Hesap silindi
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-              example:
-                message: Hesap silindi
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -281,6 +275,7 @@ paths:
           description: Aya göre filtrele (YYYY-MM)
           schema:
             type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
             example: '2026-03'
         - name: page
           in: query
@@ -375,6 +370,8 @@ paths:
                 $ref: '#/components/schemas/Transaction'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -406,6 +403,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -422,6 +421,8 @@ paths:
           description: İşlem silindi
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -443,6 +444,7 @@ paths:
           description: Aya göre filtrele (YYYY-MM) — boş bırakılırsa mevcut ay
           schema:
             type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
             example: '2026-03'
       responses:
         '200':
@@ -503,6 +505,27 @@ paths:
           $ref: '#/components/responses/Conflict'
 
   /budgets/{id}:
+    get:
+      tags: [Budgets]
+      summary: Bütçe detayı
+      operationId: getBudget
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: Bütçe detayı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       tags: [Budgets]
       summary: Bütçeyi güncelle
@@ -530,6 +553,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -546,6 +571,8 @@ paths:
           description: Bütçe silindi
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -624,6 +651,27 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Kategori detayı
+      operationId: getCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: Kategori detayı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       tags: [Categories]
       summary: Kategoriyi güncelle
@@ -648,8 +696,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -666,6 +718,8 @@ paths:
           description: Kategori silindi
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -687,6 +741,7 @@ paths:
           description: Özet ayı (YYYY-MM) — boş bırakılırsa mevcut ay
           schema:
             type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
             example: '2026-03'
       responses:
         '200':
@@ -792,6 +847,16 @@ components:
             error: conflict
             message: Bu e-posta adresi zaten kayıtlı
 
+    Forbidden:
+      description: Kimliği doğrulanmış kullanıcı bu kaynağa erişemez
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: forbidden
+            message: Bu kaynağa erişim yetkiniz yok
+
   schemas:
 
     # ── Auth ──────────────────────────────────────
@@ -883,6 +948,7 @@ components:
         currency:
           type: string
           description: Tercih edilen para birimi (ISO 4217)
+          pattern: '^[A-Z]{3}$'
           example: TRY
         created_at:
           type: string
@@ -905,6 +971,7 @@ components:
         currency:
           type: string
           description: ISO 4217 para birimi kodu
+          pattern: '^[A-Z]{3}$'
           example: USD
 
     ChangePasswordRequest:
@@ -1072,6 +1139,7 @@ components:
         month:
           type: string
           description: Geçerli olduğu ay (YYYY-MM)
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
           example: '2026-03'
         created_at:
           type: string
@@ -1092,7 +1160,8 @@ components:
           example: 1500.00
         month:
           type: string
-          description: YYYY-MM formatı
+          description: Geçerli olduğu ay (YYYY-MM)
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
           example: '2026-03'
 
     UpdateBudgetRequest:
@@ -1110,6 +1179,7 @@ components:
       properties:
         month:
           type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
           example: '2026-03'
         data:
           type: array
@@ -1176,6 +1246,8 @@ components:
       properties:
         month:
           type: string
+          description: Özetin ait olduğu ay (YYYY-MM)
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
           example: '2026-03'
         balance:
           type: number
@@ -1221,7 +1293,7 @@ components:
                 example: 58.0
         recent_transactions:
           type: array
-          description: Son işlemler
+          description: Kullanıcının en son 5 işlemi
           items:
             $ref: '#/components/schemas/Transaction'
 
