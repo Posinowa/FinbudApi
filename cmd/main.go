@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
+	"github.com/Posinowa/FinbudApp/pkg/jwt"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -21,8 +21,9 @@ func main() {
 		log.Fatalf("DB baglantisi kurulamadi: %v", err)
 	}
 
-	r := gin.Default()
+	jwt.Init(cfg.JWTSecret)
 
+	r := gin.Default()
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})

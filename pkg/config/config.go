@@ -14,6 +14,7 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+	JWTSecret  string
 }
 
 func Load() (*Config, error) {
@@ -26,12 +27,15 @@ func Load() (*Config, error) {
 		DBUser:     os.Getenv("DB_USER"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),
+		JWTSecret:  os.Getenv("JWT_SECRET"),
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {
 		return nil, fmt.Errorf("eksik zorunlu DB config degiskenleri")
 	}
-
+	if cfg.JWTSecret == "" {
+		return nil, fmt.Errorf("JWT_SECRET zorunludur")
+	}
 	if cfg.AppPort == "" {
 		cfg.AppPort = "8080"
 	}
