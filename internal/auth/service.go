@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
 )
 
 type User struct {
@@ -34,7 +37,20 @@ type RegisterResponse struct {
 	UserID  string `json:"user_id"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type AuthResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+}
+
 var ErrEmailAlreadyExists = errors.New("email already exists")
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, int, error) {
 	existing, err := s.repo.GetUserByEmail(ctx, req.Email)
@@ -59,4 +75,43 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		Message: "Kullanici basariyla olusturuldu",
 		UserID:  userID,
 	}, http.StatusCreated, nil
+}
+
+func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, int, error) {
+	user, err := s.repo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	if user == nil {
+		return nil, http.StatusUnauthorized, ErrInvalidCredentials
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	if err != nil {
+		return nil, http.StatusUnauthorized, ErrInvalidCredentials
+	}
+
+	userID := int64(0)
+	accessToken, err := jwtpkg.GenerateAccessToken(userID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	refreshToken, err := jwtpkg.GenerateRefreshToken(userID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	err = s.repo.SaveRefreshToken(ctx, user.ID, refreshToken, expiresAt)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return &AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+	}, http.StatusOK, nil
 }

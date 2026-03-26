@@ -9,6 +9,7 @@ import (
 	"github.com/Posinowa/FinbudApp/internal/auth"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
+	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
 )
 
 func main() {
@@ -21,6 +22,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB baglantisi kurulamadi: %v", err)
 	}
+
+	jwtpkg.Init(cfg.JWTSecret)
 
 	r := gin.Default()
 
