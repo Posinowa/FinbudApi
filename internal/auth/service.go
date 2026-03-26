@@ -157,3 +157,19 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (*AuthRespons
 		ExpiresIn:    3600,
 	}, http.StatusOK, nil
 }
+func (s *Service) Logout(ctx context.Context, refreshToken string) (int, error) {
+	rt, err := s.repo.GetRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	if rt == nil {
+		return http.StatusUnauthorized, ErrInvalidToken
+	}
+
+	err = s.repo.DeleteRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusOK, nil
+}
