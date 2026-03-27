@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -41,4 +42,13 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *Repository) SaveRefreshToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO refresh_tokens (user_id, token, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := r.db.ExecContext(ctx, query, userID, token, expiresAt)
+	return err
 }
