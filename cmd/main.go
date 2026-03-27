@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Posinowa/FinbudApp/internal/auth"
+	"github.com/Posinowa/FinbudApp/internal/user"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
@@ -35,6 +36,11 @@ func main() {
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 	authHandler.RegisterRoutes(r)
+
+	userRepo := user.NewRepository(db)
+	userService := user.NewService(userRepo)
+	userHandler := user.NewHandler(userService)
+	userHandler.RegisterRoutes(r)
 
 	log.Printf("Sunucu :%s portunda baslatiliyor...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
