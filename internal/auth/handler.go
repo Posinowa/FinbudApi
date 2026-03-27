@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/Posinowa/FinbudApp/pkg/middleware"
 )
 
 type Handler struct {
@@ -20,7 +22,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
 		auth.POST("/refresh", h.Refresh)
-		auth.POST("/logout", h.Logout)
+		auth.POST("/logout", middleware.AuthMiddleware(), h.Logout)
 	}
 }
 
