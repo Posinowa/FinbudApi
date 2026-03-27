@@ -18,6 +18,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", h.Register)
+		auth.POST("/login", h.Login)
+		auth.POST("/refresh", h.Refresh)
+		auth.POST("/logout", h.Logout)
 	}
 }
 
@@ -35,4 +38,52 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	c.JSON(statusCode, resp)
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, statusCode, err := h.service.Login(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(statusCode, resp)
+}
+
+func (h *Handler) Refresh(c *gin.Context) {
+	var req RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, statusCode, err := h.service.Refresh(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(statusCode, resp)
+}
+
+func (h *Handler) Logout(c *gin.Context) {
+	var req RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	statusCode, err := h.service.Logout(c.Request.Context(), req.RefreshToken)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(statusCode, gin.H{"message": "Basariyla cikis yapildi"})
 }
