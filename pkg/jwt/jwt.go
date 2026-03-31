@@ -13,7 +13,7 @@ const (
 )
 
 type Claims struct {
-	UserID int64 `json:"user_id"`
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -23,15 +23,15 @@ func Init(secret string) {
 	secretKey = []byte(secret)
 }
 
-func GenerateAccessToken(userID int64) (string, error) {
+func GenerateAccessToken(userID string) (string, error) {
 	return generate(userID, AccessTokenDuration)
 }
 
-func GenerateRefreshToken(userID int64) (string, error) {
+func GenerateRefreshToken(userID string) (string, error) {
 	return generate(userID, RefreshTokenDuration)
 }
 
-func generate(userID int64, duration time.Duration) (string, error) {
+func generate(userID string, duration time.Duration) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
@@ -54,11 +54,9 @@ func ValidateToken(tokenString string) (*Claims, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errors.New("geçersiz token")
+		return nil, errors.New("gecersiz token")
 	}
-
 	return claims, nil
 }

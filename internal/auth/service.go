@@ -96,12 +96,12 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, i
 		return nil, http.StatusUnauthorized, ErrInvalidCredentials
 	}
 
-	accessToken, err := jwtpkg.GenerateAccessToken(0)
+	accessToken, err := jwtpkg.GenerateAccessToken(user.ID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	refreshToken, err := jwtpkg.GenerateRefreshToken(0)
+	refreshToken, err := jwtpkg.GenerateRefreshToken(user.ID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -134,12 +134,12 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (*AuthRespons
 		return nil, http.StatusInternalServerError, err
 	}
 
-	accessToken, err := jwtpkg.GenerateAccessToken(0)
+	accessToken, err := jwtpkg.GenerateAccessToken(rt.UserID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	newRefreshToken, err := jwtpkg.GenerateRefreshToken(0)
+	newRefreshToken, err := jwtpkg.GenerateRefreshToken(rt.UserID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
