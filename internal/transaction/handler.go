@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"net/http"
+        "strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -149,4 +150,93 @@ func (h *Handler) GetByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, ToTransactionResponse(transaction))
+}
+
+// GetAll godoc
+// @Summary      List all transactions
+// @Description  Retrieves transactions with filtering and pagination
+// @Tags         transactions
+// @Produce      json
+// @Param        type query string false "Filter by type (income/expense)"
+// @Param        category_id query string false "Filter by category ID"
+// @Param        month query string false "Filter by month (YYYY-MM)"
+// @Param        page query int false "Page number (default: 1)"
+// @Param        limit query int false "Items per page (default: 20, max: 100)"
+// @Success      200 {object} TransactionListResponse
+// @Failure      400 {object} apperror.ErrorResponse "Invalid query parameter"
+// @Failure      401 {object} apperror.ErrorResponse "Unauthorized"
+// @Security     BearerAuth
+// @Router       /transactions [get]
+func (h *Handler) GetAll(c *gin.Context) {
+	// Get user ID from context
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
+		return
+	}
+
+	var userID string
+	switch v := userIDValue.(type) {
+	case string:
+		userID = v
+	case uuid.UUID:
+		userID = v.String()
+	default:
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "Invalid user ID"))
+		return
+	}
+
+	// Parse query parameters
+	filter := TransactionFilter{
+		Page:  1,
+		Limit: 20,
+	}
+
+	// Type filter
+	if typeParam := c.Query("type"); typeParam != "" {
+		if typeParam != "income" && typeParam != "expense" {
+			c.JSON(http.StatusBadRequest, apperror.NewErrorResponse("validation_error", "Type must be 'income' or 'expense'"))
+			return
+		}
+		filter.Type = &typeParam
+	}
+
+	// Category filter
+	if categoryID := c.Query("category_id"); categoryID != "" {
+		filter.CategoryID = &categoryID
+	}
+
+	// Month filter
+	if month := c.Query("month"); month != "" {
+		filter.Month = &month
+	}
+
+	// Page
+	if pageStr := c.Query("page"); pageStr != "" {
+		page, err := strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			c.JSON(http.StatusBadRequest, apperror.NewErrorResponse("validation_error", "Invalid page number"))
+			return
+		}
+		filter.Page = page
+	}
+
+	// Limit
+	if limitStr := c.Query("limit"); limitStr != "" {
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil || limit < 1 {
+			c.JSON(http.StatusBadRequest, apperror.NewErrorResponse("validation_error", "Invalid limit"))
+			return
+		}
+		filter.Limit = limit
+	}
+
+	// Call service
+	result, err := h.service.GetAll(c.Request.Context(), userID, filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, apperror.NewErrorResponse("internal_error", "Failed to get transactions"))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }

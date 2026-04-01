@@ -93,3 +93,53 @@ func (s *Service) GetByID(ctx context.Context, id string, userID string) (*Trans
 
 	return result, nil
 }
+// GetAll retrieves all transactions for a user with filters
+func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionFilter) (*TransactionListResponse, error) {
+	// Set defaults
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.Limit < 1 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+
+	// Get transactions from repository
+	transactions, total, err := s.repo.GetAll(ctx, userID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build response with categories
+	var responseData []TransactionResponse
+	for _, t := range transactions {
+		twc := TransactionWithCategory{Transaction: t}
+		
+		// Get category for each transaction
+		cat, err := s.categoryRepo.GetByID(ctx, t.CategoryID)
+		if err == nil {
+			twc.Category = cat
+		}
+		
+		responseData = append(responseData, ToTransactionResponse(&twc))
+	}
+
+	// Calculate total pages
+	totalPages := total / filter.Limit
+	if total%filter.Limit > 0 {
+		totalPages++
+	}
+
+	return &TransactionListResponse{
+		Data: responseData,
+		Meta: PaginationMeta{
+			Total:      total,
+			Page:       filter.Page,
+			Limit:      filter.Limit,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+

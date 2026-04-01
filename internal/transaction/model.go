@@ -97,3 +97,26 @@ type CreateTransactionInput struct {
 	Date        string
 	Description *string
 }
+// TransactionFilter represents filter options for listing transactions
+type TransactionFilter struct {
+	Type       *string
+	CategoryID *string
+	Month      *string
+	Page       int
+	Limit      int
+}
+
+// PaginationMeta represents pagination metadata
+type PaginationMeta struct {
+	Total      int `json:"total"`
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	TotalPages int `json:"total_pages"`
+}
+
+// TransactionListResponse represents paginated transaction list response
+type TransactionListResponse struct {
+	Data []TransactionResponse `json:"data"`
+	Meta PaginationMeta        `json:"meta"`
+}
+

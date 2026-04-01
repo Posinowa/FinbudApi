@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+        "fmt"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -64,4 +65,66 @@ func (r *Repository) GetByIDWithCategory(ctx context.Context, id string) (*Trans
 		Transaction: t,
 		Category:    nil, // Category will be fetched by service
 	}, nil
+}
+// GetAll retrieves transactions with filters and pagination
+func (r *Repository) GetAll(ctx context.Context, userID string, filter TransactionFilter) ([]Transaction, int, error) {
+	// Base query
+	query := `
+		SELECT id, user_id, category_id, amount, type, date, description, created_at, updated_at
+		FROM transactions
+		WHERE user_id = $1
+	`
+	countQuery := `SELECT COUNT(*) FROM transactions WHERE user_id = $1`
+
+	args := []interface{}{userID}
+	countArgs := []interface{}{userID}
+	argIndex := 2
+
+	// Type filter
+	if filter.Type != nil && *filter.Type != "" {
+		query += fmt.Sprintf(" AND type = $%d", argIndex)
+		countQuery += fmt.Sprintf(" AND type = $%d", argIndex)
+		args = append(args, *filter.Type)
+		countArgs = append(countArgs, *filter.Type)
+		argIndex++
+	}
+
+	// Category filter
+	if filter.CategoryID != nil && *filter.CategoryID != "" {
+		query += fmt.Sprintf(" AND category_id = $%d", argIndex)
+		countQuery += fmt.Sprintf(" AND category_id = $%d", argIndex)
+		args = append(args, *filter.CategoryID)
+		countArgs = append(countArgs, *filter.CategoryID)
+		argIndex++
+	}
+
+	// Month filter (YYYY-MM format)
+	if filter.Month != nil && *filter.Month != "" {
+		query += fmt.Sprintf(" AND TO_CHAR(date, 'YYYY-MM') = $%d", argIndex)
+		countQuery += fmt.Sprintf(" AND TO_CHAR(date, 'YYYY-MM') = $%d", argIndex)
+		args = append(args, *filter.Month)
+		countArgs = append(countArgs, *filter.Month)
+		argIndex++
+	}
+
+	// Get total count
+	var total int
+	err := r.db.GetContext(ctx, &total, countQuery, countArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Order and pagination
+	query += " ORDER BY date DESC, created_at DESC"
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	offset := (filter.Page - 1) * filter.Limit
+	args = append(args, filter.Limit, offset)
+
+	var transactions []Transaction
+	err = r.db.SelectContext(ctx, &transactions, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return transactions, total, nil
 }
