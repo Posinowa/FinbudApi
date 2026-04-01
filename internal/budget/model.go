@@ -2,6 +2,7 @@ package budget
 
 import (
 	"errors"
+        "fmt"
 	"time"
 
 	"github.com/Posinowa/FinbudApp/internal/category"
@@ -86,6 +87,42 @@ func ToBudgetResponse(b *BudgetWithSpent) BudgetResponse {
 			Name: b.Category.Name,
 			Icon: b.Category.Icon,
 			Type: b.Category.Type,
+		}
+	}
+
+	return response
+}
+// CreateBudgetRequest represents the request body for creating a budget
+type CreateBudgetRequest struct {
+	CategoryID string  `json:"category_id" binding:"required,uuid"`
+	Limit      float64 `json:"limit" binding:"required,gt=0"`
+	Month      string  `json:"month" binding:"required"`
+}
+
+// CreateBudgetResponse represents the response for created budget
+type CreateBudgetResponse struct {
+	ID        string           `json:"id"`
+	Category  CategoryResponse `json:"category"`
+	Limit     float64          `json:"limit"`
+	Month     string           `json:"month"`
+	CreatedAt time.Time        `json:"created_at"`
+}
+
+// ToCreateBudgetResponse converts Budget to CreateBudgetResponse
+func ToCreateBudgetResponse(b *Budget, cat *category.Category) CreateBudgetResponse {
+	response := CreateBudgetResponse{
+		ID:        b.ID,
+		Limit:     b.Amount,
+		Month:     fmt.Sprintf("%d-%02d", b.Year, b.Month),
+		CreatedAt: b.CreatedAt,
+	}
+
+	if cat != nil {
+		response.Category = CategoryResponse{
+			ID:   cat.ID,
+			Name: cat.Name,
+			Icon: cat.Icon,
+			Type: cat.Type,
 		}
 	}
 
