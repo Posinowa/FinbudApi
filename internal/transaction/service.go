@@ -205,4 +205,21 @@ func (s *Service) Update(ctx context.Context, id string, userID string, req Upda
 	return result, nil
 }
 
+// Delete deletes a transaction
+func (s *Service) Delete(ctx context.Context, id string, userID string) error {
+	// Get existing transaction to check ownership
+	result, err := s.repo.GetByIDWithCategory(ctx, id)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	// Check ownership
+	if result.UserID != userID {
+		return ErrUnauthorized
+	}
+
+	// Delete from database
+	return s.repo.Delete(ctx, id)
+}
+
 

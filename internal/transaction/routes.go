@@ -19,5 +19,6 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 		transactions.GET("", handler.GetAll)
 		transactions.GET("/:id", handler.GetByID)
 		transactions.PUT("/:id", handler.Update)
+		transactions.DELETE("/:id", handler.Delete)
 	}
 }

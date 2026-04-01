@@ -145,3 +145,23 @@ func (r *Repository) Update(ctx context.Context, t *Transaction) error {
 	)
 	return err
 }
+
+// Delete deletes a transaction from the database
+func (r *Repository) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM transactions WHERE id = $1`
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
