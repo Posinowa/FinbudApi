@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/Posinowa/FinbudApp/internal/auth"
+	"github.com/Posinowa/FinbudApp/internal/category"
 	"github.com/Posinowa/FinbudApp/internal/user"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
@@ -32,18 +32,26 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// Auth routes
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 	authHandler.RegisterRoutes(r)
 
+	// User routes
 	userRepo := user.NewRepository(db)
 	userService := user.NewService(userRepo)
 	userHandler := user.NewHandler(userService)
 	userHandler.RegisterRoutes(r)
 
+	// Category routes
+	categoryRepo := category.NewRepository(db)
+	categoryService := category.NewService(categoryRepo)
+	categoryHandler := category.NewHandler(categoryService)
+	categoryHandler.RegisterRoutes(r)
+
 	log.Printf("Sunucu :%s portunda baslatiliyor...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
-		log.Fatalf("Sunucu baslatılamadi: %v", err)
+		log.Fatalf("Sunucu baslatilamadi: %v", err)
 	}
 }
