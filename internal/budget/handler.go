@@ -188,3 +188,58 @@ func (h *Handler) Update(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// Delete godoc
+// @Summary      Delete a budget
+// @Description  Deletes an existing budget
+// @Tags         budgets
+// @Produce      json
+// @Param        id path string true "Budget ID"
+// @Success      204 "No Content"
+// @Failure      401 {object} apperror.ErrorResponse "Unauthorized"
+// @Failure      403 {object} apperror.ErrorResponse "Forbidden"
+// @Failure      404 {object} apperror.ErrorResponse "Not found"
+// @Security     BearerAuth
+// @Router       /budgets/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	// Get user ID from context
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
+		return
+	}
+
+	var userID string
+	switch v := userIDValue.(type) {
+	case string:
+		userID = v
+	case uuid.UUID:
+		userID = v.String()
+	default:
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "Invalid user ID"))
+		return
+	}
+
+	// Get budget ID from path
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, apperror.NewErrorResponse("validation_error", "Budget ID is required"))
+		return
+	}
+
+	// Call service
+	err := h.service.Delete(c.Request.Context(), id, userID)
+	if err != nil {
+		switch err {
+		case ErrNotFound:
+			c.JSON(http.StatusNotFound, apperror.NewErrorResponse("not_found", "Budget not found"))
+		case ErrUnauthorized:
+			c.JSON(http.StatusForbidden, apperror.NewErrorResponse("forbidden", "You don't have access to this budget"))
+		default:
+			c.JSON(http.StatusInternalServerError, apperror.NewErrorResponse("internal_error", "Failed to delete budget"))
+		}
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

@@ -160,3 +160,19 @@ func (s *Service) Update(ctx context.Context, id string, userID string, req Upda
 	return &response, nil
 }
 
+// Delete deletes a budget
+func (s *Service) Delete(ctx context.Context, id string, userID string) error {
+	// Get existing budget
+	budget, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	// Check ownership
+	if budget.UserID != userID {
+		return ErrUnauthorized
+	}
+
+	// Delete from database
+	return s.repo.Delete(ctx, id)
+}
