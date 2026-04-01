@@ -127,3 +127,36 @@ func (s *Service) Create(ctx context.Context, userID string, req CreateBudgetReq
 	response := ToCreateBudgetResponse(budget, cat)
 	return &response, nil
 }
+
+// Update updates a budget (only limit can be changed)
+func (s *Service) Update(ctx context.Context, id string, userID string, req UpdateBudgetRequest) (*CreateBudgetResponse, error) {
+	// Get existing budget
+	budget, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	// Check ownership
+	if budget.UserID != userID {
+		return nil, ErrUnauthorized
+	}
+
+	// Update limit
+	budget.Amount = req.Limit
+	budget.UpdatedAt = time.Now()
+
+	// Save to database
+	if err := s.repo.Update(ctx, budget); err != nil {
+		return nil, err
+	}
+
+	// Get category for response
+	cat, err := s.categoryRepo.GetByID(ctx, budget.CategoryID)
+	if err != nil {
+		cat = nil
+	}
+
+	response := ToCreateBudgetResponse(budget, cat)
+	return &response, nil
+}
+

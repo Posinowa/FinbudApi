@@ -128,3 +128,8 @@ func ToCreateBudgetResponse(b *Budget, cat *category.Category) CreateBudgetRespo
 
 	return response
 }
+
+// UpdateBudgetRequest represents the request body for updating a budget
+type UpdateBudgetRequest struct {
+	Limit float64 `json:"limit" binding:"required,gt=0"`
+}
