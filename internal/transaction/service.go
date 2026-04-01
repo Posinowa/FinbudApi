@@ -72,3 +72,24 @@ func (s *Service) Create(ctx context.Context, input CreateTransactionInput) (*Tr
 		Category:    cat,
 	}, nil
 }
+// GetByID retrieves a transaction by ID with category
+func (s *Service) GetByID(ctx context.Context, id string, userID string) (*TransactionWithCategory, error) {
+	// Get transaction
+	result, err := s.repo.GetByIDWithCategory(ctx, id)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	// Check ownership
+	if result.UserID != userID {
+		return nil, ErrUnauthorized
+	}
+
+	// Get category
+	cat, err := s.categoryRepo.GetByID(ctx, result.CategoryID)
+	if err == nil {
+		result.Category = cat
+	}
+
+	return result, nil
+}

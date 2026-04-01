@@ -48,3 +48,20 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Transaction, e
 	}
 	return &t, nil
 }
+// GetByIDWithCategory retrieves a transaction with its category by ID
+func (r *Repository) GetByIDWithCategory(ctx context.Context, id string) (*TransactionWithCategory, error) {
+	var t Transaction
+	query := `
+		SELECT id, user_id, category_id, amount, type, date, description, created_at, updated_at
+		FROM transactions WHERE id = $1
+	`
+	err := r.db.GetContext(ctx, &t, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransactionWithCategory{
+		Transaction: t,
+		Category:    nil, // Category will be fetched by service
+	}, nil
+}
