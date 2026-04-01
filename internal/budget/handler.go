@@ -30,7 +30,7 @@ func NewHandler(service *Service) *Handler {
 // @Router       /budgets [get]
 func (h *Handler) GetAll(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -81,7 +81,7 @@ func (h *Handler) GetAll(c *gin.Context) {
 // @Router       /budgets [post]
 func (h *Handler) Create(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -141,7 +141,7 @@ func (h *Handler) Create(c *gin.Context) {
 // @Router       /budgets/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -203,7 +203,7 @@ func (h *Handler) Update(c *gin.Context) {
 // @Router       /budgets/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return

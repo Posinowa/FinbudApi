@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/Posinowa/FinbudApp/internal/category"
+	"github.com/Posinowa/FinbudApp/pkg/middleware"
 )
 
 // RegisterRoutes registers dashboard routes
@@ -13,6 +14,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 	handler := NewHandler(service)
 
 	dashboardGroup := router.Group("/dashboard")
+	dashboardGroup.Use(middleware.AuthMiddleware())
 	{
 		dashboardGroup.GET("/summary", handler.GetSummary)
 	}
