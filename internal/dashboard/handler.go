@@ -30,7 +30,7 @@ func NewHandler(service *Service) *Handler {
 // @Router       /dashboard/summary [get]
 func (h *Handler) GetSummary(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return

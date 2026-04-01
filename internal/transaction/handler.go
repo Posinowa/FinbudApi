@@ -42,7 +42,7 @@ type CreateTransactionRequest struct {
 // @Router       /transactions [post]
 func (h *Handler) Create(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -111,7 +111,7 @@ func (h *Handler) Create(c *gin.Context) {
 // @Router       /transactions/{id} [get]
 func (h *Handler) GetByID(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -169,7 +169,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 // @Router       /transactions [get]
 func (h *Handler) GetAll(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -258,7 +258,7 @@ func (h *Handler) GetAll(c *gin.Context) {
 // @Router       /transactions/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return
@@ -332,7 +332,7 @@ func (h *Handler) Update(c *gin.Context) {
 // @Router       /transactions/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	// Get user ID from context
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
 		return

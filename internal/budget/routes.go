@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/Posinowa/FinbudApp/internal/category"
+	"github.com/Posinowa/FinbudApp/pkg/middleware"
 )
 
 // RegisterRoutes registers budget routes
@@ -14,6 +15,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 	handler := NewHandler(service)
 
 	budgets := router.Group("/budgets")
+	budgets.Use(middleware.AuthMiddleware())
 	{
 		budgets.GET("", handler.GetAll)
 		budgets.POST("", handler.Create)
