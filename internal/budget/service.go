@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+        "github.com/google/uuid"
+
 	"github.com/Posinowa/FinbudApp/internal/category"
 )
 
@@ -77,4 +79,51 @@ func parseMonth(monthStr string) (int, int, error) {
 	}
 
 	return year, month, nil
+}
+
+// Create creates a new budget
+func (s *Service) Create(ctx context.Context, userID string, req CreateBudgetRequest) (*CreateBudgetResponse, error) {
+	// Parse month
+	year, month, err := parseMonth(req.Month)
+	if err != nil {
+		return nil, ErrInvalidMonth
+	}
+
+	// Check if category exists and belongs to user
+	cat, err := s.categoryRepo.GetByID(ctx, req.CategoryID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	if cat.UserID != nil && *cat.UserID != userID {
+		return nil, ErrNotFound
+	}
+
+	// Check if budget already exists for this category and month
+	exists, err := s.repo.Exists(ctx, userID, req.CategoryID, year, month)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrAlreadyExists
+	}
+
+	// Create budget
+	budget := &Budget{
+		ID:         uuid.New().String(),
+		UserID:     userID,
+		CategoryID: req.CategoryID,
+		Amount:     req.Limit,
+		Month:      month,
+		Year:       year,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	// Save to database
+	if err := s.repo.Create(ctx, budget); err != nil {
+		return nil, err
+	}
+
+	response := ToCreateBudgetResponse(budget, cat)
+	return &response, nil
 }

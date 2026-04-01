@@ -16,6 +16,6 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 	budgets := router.Group("/budgets")
 	{
 		budgets.GET("", handler.GetAll)
+		budgets.POST("", handler.Create)
 	}
 }
-

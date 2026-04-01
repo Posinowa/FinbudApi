@@ -64,3 +64,62 @@ func (h *Handler) GetAll(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// Create godoc
+// @Summary      Create a new budget
+// @Description  Creates a new budget for a category and month
+// @Tags         budgets
+// @Accept       json
+// @Produce      json
+// @Param        request body CreateBudgetRequest true "Budget data"
+// @Success      201 {object} CreateBudgetResponse
+// @Failure      400 {object} apperror.ErrorResponse "Validation error"
+// @Failure      401 {object} apperror.ErrorResponse "Unauthorized"
+// @Failure      404 {object} apperror.ErrorResponse "Category not found"
+// @Failure      409 {object} apperror.ErrorResponse "Conflict"
+// @Security     BearerAuth
+// @Router       /budgets [post]
+func (h *Handler) Create(c *gin.Context) {
+	// Get user ID from context
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
+		return
+	}
+
+	var userID string
+	switch v := userIDValue.(type) {
+	case string:
+		userID = v
+	case uuid.UUID:
+		userID = v.String()
+	default:
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "Invalid user ID"))
+		return
+	}
+
+	// Bind request body
+	var req CreateBudgetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
+		return
+	}
+
+	// Call service
+	result, err := h.service.Create(c.Request.Context(), userID, req)
+	if err != nil {
+		switch err {
+		case ErrInvalidMonth:
+			c.JSON(http.StatusBadRequest, apperror.NewErrorResponse("validation_error", "Invalid month format. Use YYYY-MM"))
+		case ErrNotFound:
+			c.JSON(http.StatusNotFound, apperror.NewErrorResponse("not_found", "Category not found"))
+		case ErrAlreadyExists:
+			c.JSON(http.StatusConflict, apperror.NewErrorResponse("conflict", "Budget already exists for this category and month"))
+		default:
+			c.JSON(http.StatusInternalServerError, apperror.NewErrorResponse("internal_error", "Failed to create budget"))
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
+}
