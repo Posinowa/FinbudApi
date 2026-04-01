@@ -120,3 +120,11 @@ type TransactionListResponse struct {
 	Meta PaginationMeta        `json:"meta"`
 }
 
+// UpdateTransactionRequest represents the request body for updating a transaction
+type UpdateTransactionRequest struct {
+	Amount      *float64 `json:"amount,omitempty"`
+	CategoryID  *string  `json:"category_id,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	Date        *string  `json:"date,omitempty"`
+}
+

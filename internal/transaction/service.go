@@ -143,3 +143,66 @@ func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionF
 	}, nil
 }
 
+// Update updates a transaction
+func (s *Service) Update(ctx context.Context, id string, userID string, req UpdateTransactionRequest) (*TransactionWithCategory, error) {
+	// Get existing transaction
+	result, err := s.repo.GetByIDWithCategory(ctx, id)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	// Check ownership
+	if result.UserID != userID {
+		return nil, ErrUnauthorized
+	}
+
+	// Update fields if provided
+	if req.Amount != nil {
+		if *req.Amount <= 0 {
+			return nil, ErrInvalidAmount
+		}
+		result.Amount = *req.Amount
+	}
+
+	if req.CategoryID != nil {
+		// Validate category exists and belongs to user
+		cat, err := s.categoryRepo.GetByID(ctx, *req.CategoryID)
+		if err != nil {
+			return nil, ErrCategoryNotFound
+		}
+		if cat.UserID != nil && *cat.UserID != userID {
+			return nil, ErrCategoryNotFound
+		}
+		result.CategoryID = *req.CategoryID
+	}
+
+	if req.Description != nil {
+		result.Description = req.Description
+	}
+
+	if req.Date != nil {
+		date, err := time.Parse("2006-01-02", *req.Date)
+		if err != nil {
+			return nil, ErrInvalidDate
+		}
+		result.Date = date
+	}
+
+	// Update timestamp
+	result.UpdatedAt = time.Now()
+
+	// Save to database
+	if err := s.repo.Update(ctx, &result.Transaction); err != nil {
+		return nil, err
+	}
+
+	// Get category for response
+	cat, err := s.categoryRepo.GetByID(ctx, result.CategoryID)
+	if err == nil {
+		result.Category = cat
+	}
+
+	return result, nil
+}
+
+

@@ -128,3 +128,20 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 
 	return transactions, total, nil
 }
+// Update updates a transaction in the database
+func (r *Repository) Update(ctx context.Context, t *Transaction) error {
+	query := `
+		UPDATE transactions 
+		SET amount = $1, category_id = $2, description = $3, date = $4, updated_at = $5
+		WHERE id = $6
+	`
+	_, err := r.db.ExecContext(ctx, query,
+		t.Amount,
+		t.CategoryID,
+		t.Description,
+		t.Date,
+		t.UpdatedAt,
+		t.ID,
+	)
+	return err
+}
