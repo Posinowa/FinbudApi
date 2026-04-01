@@ -16,6 +16,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 	transactions := router.Group("/transactions")
 	{
 		transactions.POST("", handler.Create)
-
+		transactions.GET("", handler.GetAll)
+		transactions.GET("/:id", handler.GetByID)
 	}
 }
