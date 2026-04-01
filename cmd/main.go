@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Posinowa/FinbudApp/internal/auth"
+	"github.com/Posinowa/FinbudApp/internal/budget"
 	"github.com/Posinowa/FinbudApp/internal/category"
 	"github.com/Posinowa/FinbudApp/internal/transaction"
 	"github.com/Posinowa/FinbudApp/internal/user"
@@ -53,6 +54,9 @@ func main() {
 
 	// Transaction routes
 	transaction.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
+
+	// Budget routes
+	budget.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
 
 	log.Printf("Sunucu :%s portunda baslatiliyor...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
