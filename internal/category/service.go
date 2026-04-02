@@ -100,3 +100,17 @@ func (s *Service) Delete(ctx context.Context, userID, categoryID string) (int, e
 
 	return http.StatusNoContent, nil
 }
+// GetByID retrieves a single category by ID
+func (s *Service) GetByID(ctx context.Context, userID string, categoryID string) (*Category, int, error) {
+	category, err := s.repo.GetByID(ctx, categoryID)
+	if err != nil {
+		return nil, http.StatusNotFound, errors.New("category not found")
+	}
+
+	// Check access: default categories are accessible by all, custom categories only by owner
+	if category.UserID != nil && *category.UserID != userID {
+		return nil, http.StatusForbidden, errors.New("access denied")
+	}
+
+	return category, http.StatusOK, nil
+}

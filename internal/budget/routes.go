@@ -18,6 +18,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 	budgets.Use(middleware.AuthMiddleware())
 	{
 		budgets.GET("", handler.GetAll)
+                budgets.GET("/:id", handler.GetByID)
 		budgets.POST("", handler.Create)
 		budgets.PUT("/:id", handler.Update)
 		budgets.DELETE("/:id", handler.Delete)

@@ -176,3 +176,38 @@ func (s *Service) Delete(ctx context.Context, id string, userID string) error {
 	// Delete from database
 	return s.repo.Delete(ctx, id)
 }
+// GetByID retrieves a single budget by ID
+func (s *Service) GetByID(ctx context.Context, budgetID string, userID string) (*BudgetResponse, error) {
+	// Get budget from repository
+	budget, err := s.repo.GetByID(ctx, budgetID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	// Check ownership
+	if budget.UserID != userID {
+		return nil, ErrUnauthorized
+	}
+
+	// Get spent amount
+	spent, err := s.repo.GetSpentAmount(ctx, userID, budget.CategoryID, budget.Year, budget.Month)
+	if err != nil {
+		spent = 0
+	}
+
+	// Get category
+	cat, err := s.categoryRepo.GetByID(ctx, budget.CategoryID)
+	if err != nil {
+		cat = nil
+	}
+
+	// Build response
+	budgetWithSpent := BudgetWithSpent{
+		Budget:   *budget,
+		Category: cat,
+		Spent:    spent,
+	}
+
+	response := ToBudgetResponse(&budgetWithSpent)
+	return &response, nil
+}

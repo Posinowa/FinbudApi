@@ -243,3 +243,54 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+// GetByID godoc
+// @Summary      Get a budget by ID
+// @Description  Retrieves a single budget with calculated spent values
+// @Tags         budgets
+// @Produce      json
+// @Param        id path string true "Budget ID"
+// @Success      200 {object} BudgetResponse
+// @Failure      401 {object} apperror.ErrorResponse "Unauthorized"
+// @Failure      403 {object} apperror.ErrorResponse "Forbidden"
+// @Failure      404 {object} apperror.ErrorResponse "Not found"
+// @Security     BearerAuth
+// @Router       /budgets/{id} [get]
+func (h *Handler) GetByID(c *gin.Context) {
+	// Get user ID from context
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "User not authenticated"))
+		return
+	}
+
+	var userID string
+	switch v := userIDValue.(type) {
+	case string:
+		userID = v
+	case uuid.UUID:
+		userID = v.String()
+	default:
+		c.JSON(http.StatusUnauthorized, apperror.NewErrorResponse("unauthorized", "Invalid user ID"))
+		return
+	}
+
+	// Get budget ID from URL
+	budgetID := c.Param("id")
+
+	// Call service
+	result, err := h.service.GetByID(c.Request.Context(), budgetID, userID)
+	if err != nil {
+		switch err {
+		case ErrNotFound:
+			c.JSON(http.StatusNotFound, apperror.NewErrorResponse("not_found", "Budget not found"))
+		case ErrUnauthorized:
+			c.JSON(http.StatusForbidden, apperror.NewErrorResponse("forbidden", "Access denied"))
+		default:
+			c.JSON(http.StatusInternalServerError, apperror.NewErrorResponse("internal_error", "Failed to get budget"))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

@@ -20,6 +20,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	categories.Use(middleware.AuthMiddleware())
 	{
 		categories.GET("", h.GetAll)
+                categories.GET("/:id", h.GetByID)
 		categories.POST("", h.Create)
 		categories.PUT("/:id", h.Update)
 		categories.DELETE("/:id", h.Delete)
@@ -92,4 +93,16 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 
 	c.Status(statusCode)
+}
+func (h *Handler) GetByID(c *gin.Context) {
+	userID := c.GetString("user_id")
+	categoryID := c.Param("id")
+
+	category, statusCode, err := h.service.GetByID(c.Request.Context(), userID, categoryID)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(statusCode, category)
 }
