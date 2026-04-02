@@ -92,3 +92,41 @@
 
 \*\*Çözüm Önerisi:\*\* `cmd/main.go` dosyasında `/api/v1` route group'una auth middleware eklenmeli.
 
+
+
+
+
+
+
+---
+
+## Postman E2E Test Sonuçları (02 Nisan 2026)
+
+### Test Ortamı
+- **Araç:** Postman
+- **Base URL:** http://localhost:8080
+- **Tester:** Tuğyan Güzel
+
+### Test Sonuçları
+
+| # | Endpoint | Method | Sonuç | Not |
+|---|----------|--------|-------|-----|
+| 1 | /health | GET | ✅ PASS | status: ok |
+| 2 | /auth/register | POST | ✅ PASS | Yeni kullanıcı oluşturuldu |
+| 3 | /auth/login | POST | ✅ PASS | Token'lar alındı |
+| 4 | /users/me | GET | ✅ PASS | Profil bilgileri döndü |
+| 5 | /categories | GET | ✅ PASS | 11 kategori listelendi |
+| 6 | /api/v1/transactions | GET | ✅ PASS | Boş liste (beklenen) |
+| 7 | /api/v1/budgets | GET | ✅ PASS | Boş liste (beklenen) |
+| 8 | /api/v1/dashboard/summary | GET | ✅ PASS | Özet veriler döndü |
+| 9 | /api/v1/transactions | POST | ✅ PASS | Transaction oluşturuldu |
+| 10 | /api/v1/budgets | POST | ✅ PASS | Budget oluşturuldu |
+| 11 | /categories | POST | ✅ PASS | Kategori oluşturuldu |
+| 12 | /users/me (No Auth) | GET | ✅ PASS | 401 Unauthorized döndü |
+| 13 | /auth/refresh | POST | ✅ PASS | Yeni token'lar alındı |
+
+### Özet
+- **Toplam Test:** 13
+- **Başarılı:** 13
+- **Başarısız:** 0
+- **Başarı Oranı:** %100
