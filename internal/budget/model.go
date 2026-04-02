@@ -61,8 +61,8 @@ type BudgetListResponse struct {
 // BudgetWithSpent includes spent calculation
 type BudgetWithSpent struct {
 	Budget
-	Category *category.Category
-	Spent    float64
+	Category *category.Category `db:"-"`
+	Spent    float64            `db:"spent"`
 }
 
 // ToBudgetResponse converts BudgetWithSpent to BudgetResponse

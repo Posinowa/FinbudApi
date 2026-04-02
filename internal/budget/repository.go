@@ -18,15 +18,15 @@ func NewRepository(db *sqlx.DB) *Repository {
 // GetAllByMonth retrieves all budgets for a user in a specific month with spent amounts
 func (r *Repository) GetAllByMonth(ctx context.Context, userID string, year int, month int) ([]BudgetWithSpent, error) {
 	query := `
-		SELECT 
+		SELECT
 			b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.created_at, b.updated_at,
 			COALESCE(SUM(
-				CASE WHEN t.type = 'expense' AND EXTRACT(YEAR FROM t.date) = $2 AND EXTRACT(MONTH FROM t.date) = $3 
+				CASE WHEN t.type = 'expense' AND EXTRACT(YEAR FROM t.date) = $2 AND EXTRACT(MONTH FROM t.date) = $3
 				THEN t.amount ELSE 0 END
 			), 0) as spent
 		FROM budgets b
 		LEFT JOIN transactions t ON t.category_id = b.category_id AND t.user_id = b.user_id
-		WHERE b.user_id = $1 AND b.year = $2 AND b.month = $3
+		WHERE b.user_id = $1::uuid AND b.year = $2 AND b.month = $3
 		GROUP BY b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.created_at, b.updated_at
 		ORDER BY b.created_at DESC
 	`
@@ -58,7 +58,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Budget, error) {
 	var b Budget
 	query := `
 		SELECT id, user_id, category_id, amount, month, year, created_at, updated_at
-		FROM budgets WHERE id = $1
+		FROM budgets WHERE id = $1::uuid
 	`
 	err := r.db.GetContext(ctx, &b, query, id)
 	if err != nil {
@@ -73,9 +73,9 @@ func (r *Repository) GetSpentAmount(ctx context.Context, userID string, category
 	query := `
 		SELECT COALESCE(SUM(amount), 0)
 		FROM transactions
-		WHERE user_id = $1 
-		AND category_id = $2 
-		AND EXTRACT(YEAR FROM date) = $3 
+		WHERE user_id = $1::uuid
+		AND category_id = $2::uuid
+		AND EXTRACT(YEAR FROM date) = $3
 		AND EXTRACT(MONTH FROM date) = $4
 		AND type = 'expense'
 	`
@@ -90,7 +90,7 @@ func (r *Repository) GetSpentAmount(ctx context.Context, userID string, category
 func (r *Repository) Create(ctx context.Context, b *Budget) error {
 	query := `
 		INSERT INTO budgets (id, user_id, category_id, amount, month, year, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8)
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		b.ID, b.UserID, b.CategoryID, b.Amount, b.Month, b.Year, b.CreatedAt, b.UpdatedAt,
@@ -102,8 +102,8 @@ func (r *Repository) Create(ctx context.Context, b *Budget) error {
 func (r *Repository) Exists(ctx context.Context, userID string, categoryID string, year int, month int) (bool, error) {
 	var count int
 	query := `
-		SELECT COUNT(*) FROM budgets 
-		WHERE user_id = $1 AND category_id = $2 AND year = $3 AND month = $4
+		SELECT COUNT(*) FROM budgets
+		WHERE user_id = $1::uuid AND category_id = $2::uuid AND year = $3 AND month = $4
 	`
 	err := r.db.GetContext(ctx, &count, query, userID, categoryID, year, month)
 	if err != nil {
@@ -115,7 +115,7 @@ func (r *Repository) Exists(ctx context.Context, userID string, categoryID strin
 // Update updates a budget
 func (r *Repository) Update(ctx context.Context, b *Budget) error {
 	query := `
-		UPDATE budgets SET amount = $1, updated_at = $2 WHERE id = $3
+		UPDATE budgets SET amount = $1, updated_at = $2 WHERE id = $3::uuid
 	`
 	_, err := r.db.ExecContext(ctx, query, b.Amount, b.UpdatedAt, b.ID)
 	return err
@@ -123,7 +123,7 @@ func (r *Repository) Update(ctx context.Context, b *Budget) error {
 
 // Delete deletes a budget
 func (r *Repository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM budgets WHERE id = $1`
+	query := `DELETE FROM budgets WHERE id = $1::uuid`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err

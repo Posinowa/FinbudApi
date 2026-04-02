@@ -72,8 +72,8 @@ func (s *Service) getTotalByType(ctx context.Context, userID string, year int, m
 	query := `
 		SELECT COALESCE(SUM(amount), 0)
 		FROM transactions
-		WHERE user_id = $1 
-		AND EXTRACT(YEAR FROM date) = $2 
+		WHERE user_id = $1::uuid
+		AND EXTRACT(YEAR FROM date) = $2
 		AND EXTRACT(MONTH FROM date) = $3
 		AND type = $4
 	`
@@ -84,15 +84,15 @@ func (s *Service) getTotalByType(ctx context.Context, userID string, year int, m
 // getBudgetSummary gets all budgets with spent amounts for a month
 func (s *Service) getBudgetSummary(ctx context.Context, userID string, year int, month int) ([]BudgetSummary, error) {
 	query := `
-		SELECT 
+		SELECT
 			b.id, b.category_id, b.amount as budget_limit,
 			COALESCE(SUM(
-				CASE WHEN t.type = 'expense' AND EXTRACT(YEAR FROM t.date) = $2 AND EXTRACT(MONTH FROM t.date) = $3 
+				CASE WHEN t.type = 'expense' AND EXTRACT(YEAR FROM t.date) = $2 AND EXTRACT(MONTH FROM t.date) = $3
 				THEN t.amount ELSE 0 END
 			), 0) as spent
 		FROM budgets b
 		LEFT JOIN transactions t ON t.category_id = b.category_id AND t.user_id = b.user_id
-		WHERE b.user_id = $1 AND b.year = $2 AND b.month = $3
+		WHERE b.user_id = $1::uuid AND b.year = $2 AND b.month = $3
 		GROUP BY b.id, b.category_id, b.amount
 		ORDER BY b.created_at DESC
 	`
@@ -149,7 +149,7 @@ func (s *Service) getRecentTransactions(ctx context.Context, userID string, limi
 	query := `
 		SELECT id, amount, type, category_id, description, date
 		FROM transactions
-		WHERE user_id = $1
+		WHERE user_id = $1::uuid
 		ORDER BY date DESC, created_at DESC
 		LIMIT $2
 	`

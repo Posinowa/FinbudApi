@@ -2,7 +2,8 @@ package transaction
 
 import (
 	"context"
-        "fmt"
+	"fmt"
+        "log"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 func (r *Repository) Create(ctx context.Context, t *Transaction) error {
 	query := `
 		INSERT INTO transactions (id, user_id, category_id, amount, type, date, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9)
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		t.ID,
@@ -41,7 +42,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Transaction, e
 	var t Transaction
 	query := `
 		SELECT id, user_id, category_id, amount, type, date, description, created_at, updated_at
-		FROM transactions WHERE id = $1
+		FROM transactions WHERE id = $1::uuid
 	`
 	err := r.db.GetContext(ctx, &t, query, id)
 	if err != nil {
@@ -49,12 +50,13 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Transaction, e
 	}
 	return &t, nil
 }
+
 // GetByIDWithCategory retrieves a transaction with its category by ID
 func (r *Repository) GetByIDWithCategory(ctx context.Context, id string) (*TransactionWithCategory, error) {
 	var t Transaction
 	query := `
 		SELECT id, user_id, category_id, amount, type, date, description, created_at, updated_at
-		FROM transactions WHERE id = $1
+		FROM transactions WHERE id = $1::uuid
 	`
 	err := r.db.GetContext(ctx, &t, query, id)
 	if err != nil {
@@ -66,15 +68,16 @@ func (r *Repository) GetByIDWithCategory(ctx context.Context, id string) (*Trans
 		Category:    nil, // Category will be fetched by service
 	}, nil
 }
+
 // GetAll retrieves transactions with filters and pagination
 func (r *Repository) GetAll(ctx context.Context, userID string, filter TransactionFilter) ([]Transaction, int, error) {
 	// Base query
 	query := `
 		SELECT id, user_id, category_id, amount, type, date, description, created_at, updated_at
 		FROM transactions
-		WHERE user_id = $1
+		WHERE user_id = $1::uuid
 	`
-	countQuery := `SELECT COUNT(*) FROM transactions WHERE user_id = $1`
+	countQuery := `SELECT COUNT(*) FROM transactions WHERE user_id = $1::uuid`
 
 	args := []interface{}{userID}
 	countArgs := []interface{}{userID}
@@ -91,8 +94,8 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 
 	// Category filter
 	if filter.CategoryID != nil && *filter.CategoryID != "" {
-		query += fmt.Sprintf(" AND category_id = $%d", argIndex)
-		countQuery += fmt.Sprintf(" AND category_id = $%d", argIndex)
+		query += fmt.Sprintf(" AND category_id = $%d::uuid", argIndex)
+		countQuery += fmt.Sprintf(" AND category_id = $%d::uuid", argIndex)
 		args = append(args, *filter.CategoryID)
 		countArgs = append(countArgs, *filter.CategoryID)
 		argIndex++
@@ -111,6 +114,7 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 	var total int
 	err := r.db.GetContext(ctx, &total, countQuery, countArgs...)
 	if err != nil {
+                log.Printf("Count query error: %v", err)
 		return nil, 0, err
 	}
 
@@ -123,17 +127,19 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 	var transactions []Transaction
 	err = r.db.SelectContext(ctx, &transactions, query, args...)
 	if err != nil {
+                log.Printf("Select query error: %v", err)
 		return nil, 0, err
 	}
 
 	return transactions, total, nil
 }
+
 // Update updates a transaction in the database
 func (r *Repository) Update(ctx context.Context, t *Transaction) error {
 	query := `
 		UPDATE transactions 
-		SET amount = $1, category_id = $2, description = $3, date = $4, updated_at = $5
-		WHERE id = $6
+		SET amount = $1, category_id = $2::uuid, description = $3, date = $4, updated_at = $5
+		WHERE id = $6::uuid
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		t.Amount,
@@ -148,7 +154,7 @@ func (r *Repository) Update(ctx context.Context, t *Transaction) error {
 
 // Delete deletes a transaction from the database
 func (r *Repository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM transactions WHERE id = $1`
+	query := `DELETE FROM transactions WHERE id = $1::uuid`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
