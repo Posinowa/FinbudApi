@@ -103,6 +103,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /auth/refresh:
     post:
@@ -126,6 +128,8 @@ paths:
                 $ref: '#/components/schemas/AuthResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /auth/logout:
     post:
@@ -145,6 +149,8 @@ paths:
                 message: Çıkış başarılı
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   # ─────────────────────────────────────────────
   # USER / PROFILE
@@ -173,6 +179,8 @@ paths:
                 updated_at: '2026-03-01T08:30:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     put:
       tags: [User]
@@ -200,6 +208,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     delete:
       tags: [User]
@@ -212,6 +222,8 @@ paths:
           description: Hesap silindi
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /users/me/password:
     put:
@@ -242,6 +254,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   # ─────────────────────────────────────────────
   # TRANSACTIONS
@@ -321,6 +335,8 @@ paths:
                   total_pages: 5
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     post:
       tags: [Transactions]
@@ -351,6 +367,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /transactions/{id}:
     get:
@@ -473,6 +491,8 @@ paths:
                     created_at: '2026-03-01T08:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     post:
       tags: [Budgets]
@@ -501,6 +521,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
 
@@ -621,6 +643,8 @@ paths:
                     is_default: true
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     post:
       tags: [Categories]
@@ -649,6 +673,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /categories/{id}:
     get:
@@ -777,6 +803,8 @@ paths:
                     created_at: '2026-03-10T14:22:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 # ═════════════════════════════════════════════════
 # COMPONENTS
