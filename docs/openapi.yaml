@@ -1321,7 +1321,8 @@ components:
                 example: 58.0
         recent_transactions:
           type: array
-          description: Kullanıcının en son 5 işlemi
+          description: Kullanıcının en son 10 işlemi (en yeniden eskiye sıralı)
+          maxItems: 10
           items:
             $ref: '#/components/schemas/Transaction'
 
