@@ -64,7 +64,7 @@ func (r *Repository) Create(ctx context.Context, userID, name string, icon *stri
 	return &category, nil
 }
 
-func (r *Repository) Update(ctx context.Context, id string, name *string, icon *string) (*Category, error) {
+func (r *Repository) Update(ctx context.Context, id string, name *string, icon *string, categoryType *string) (*Category, error) {
 	var category Category
 
 	query := "UPDATE categories SET "
@@ -80,6 +80,12 @@ func (r *Repository) Update(ctx context.Context, id string, name *string, icon *
 	if icon != nil {
 		query += fmt.Sprintf("icon = $%d, ", argIndex)
 		args = append(args, *icon)
+		argIndex++
+	}
+
+	if categoryType != nil {
+		query += fmt.Sprintf("type = $%d, ", argIndex)
+		args = append(args, *categoryType)
 		argIndex++
 	}
 

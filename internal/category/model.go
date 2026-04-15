@@ -21,4 +21,5 @@ type CreateCategoryRequest struct {
 type UpdateCategoryRequest struct {
 	Name *string `json:"name"`
 	Icon *string `json:"icon"`
+	Type *string `json:"type" binding:"omitempty,oneof=income expense"`
 }

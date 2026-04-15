@@ -64,7 +64,7 @@ func (s *Service) Update(ctx context.Context, userID, categoryID string, req Upd
 	}
 
 	// Güncelle
-	updated, err := s.repo.Update(ctx, categoryID, req.Name, req.Icon)
+	updated, err := s.repo.Update(ctx, categoryID, req.Name, req.Icon, req.Type)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
