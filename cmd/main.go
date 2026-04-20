@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/Posinowa/FinbudApp/internal/auth"
@@ -36,6 +37,8 @@ func main() {
 	r.Use(corsmw.CORSMiddleware())
 	// Güvenlik header'ları
 	r.Use(corsmw.SecurityHeaders())
+	// Timeout middleware (30 saniye)
+	r.Use(corsmw.Timeout(30 * time.Second))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
