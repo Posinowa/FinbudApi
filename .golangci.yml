@@ -1,0 +1,32 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - unused
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - typecheck
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+
+issues:
+  exclude-rules:
+    # Seed aracı - production kodu değil
+    - path: cmd/seed/
+      linters:
+        - errcheck
+    # Test dosyaları
+    - path: _test\.go
+      linters:
+        - errcheck
+        - unused
+  max-issues-per-linter: 50
+  max-same-issues: 10

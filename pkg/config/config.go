@@ -19,7 +19,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	godotenv.Load(".env")
+	_ = godotenv.Load(".env") // .env production ortamında olmayabilir, hata kasıtlı olarak görmezden gelinir
 
 	cfg := &Config{
 		AppPort:    os.Getenv("APP_PORT"),
