@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/Posinowa/FinbudApp/internal/validator"
 	"github.com/Posinowa/FinbudApp/pkg/blacklist"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
 )
@@ -30,7 +31,7 @@ func NewService(repo *Repository) *Service {
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required"`
 }
 
 type RegisterResponse struct {
@@ -59,6 +60,10 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrInvalidToken = errors.New("invalid or expired token")
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, int, error) {
+	if err := validator.ValidatePasswordStrength(req.Password); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
 	existing, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
