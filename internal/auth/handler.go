@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -81,7 +82,13 @@ func (h *Handler) Logout(c *gin.Context) {
 		return
 	}
 
-	statusCode, err := h.service.Logout(c.Request.Context(), req.RefreshToken)
+	// Authorization header'dan access token'ı al
+	accessToken := ""
+	if parts := strings.SplitN(c.GetHeader("Authorization"), " ", 2); len(parts) == 2 {
+		accessToken = parts[1]
+	}
+
+	statusCode, err := h.service.Logout(c.Request.Context(), req.RefreshToken, accessToken)
 	if err != nil {
 		c.JSON(statusCode, gin.H{"error": err.Error()})
 		return

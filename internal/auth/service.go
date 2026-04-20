@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/Posinowa/FinbudApp/pkg/blacklist"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
 )
 
@@ -157,7 +158,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (*AuthRespons
 		ExpiresIn:    3600,
 	}, http.StatusOK, nil
 }
-func (s *Service) Logout(ctx context.Context, refreshToken string) (int, error) {
+func (s *Service) Logout(ctx context.Context, refreshToken string, accessToken string) (int, error) {
 	rt, err := s.repo.GetRefreshToken(ctx, refreshToken)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -169,6 +170,14 @@ func (s *Service) Logout(ctx context.Context, refreshToken string) (int, error) 
 	err = s.repo.DeleteRefreshToken(ctx, refreshToken)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+
+	// Access token'ı blacklist'e ekle
+	if accessToken != "" {
+		claims, err := jwtpkg.ValidateToken(accessToken)
+		if err == nil && claims.ID != "" {
+			blacklist.Add(claims.ID)
+		}
 	}
 
 	return http.StatusOK, nil

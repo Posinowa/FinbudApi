@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Posinowa/FinbudApp/pkg/blacklist"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
 )
 
@@ -29,6 +30,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims, err := jwtpkg.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Gecersiz veya suresi dolmus token"})
+			c.Abort()
+			return
+		}
+
+		if blacklist.IsBlacklisted(claims.ID) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token gecersiz kilindi. Lutfen tekrar giris yapin."})
 			c.Abort()
 			return
 		}
