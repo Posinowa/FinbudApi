@@ -19,8 +19,8 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", h.Register)
-		auth.POST("/login", h.Login)
+		auth.POST("/register", middleware.RegisterRateLimiter.Middleware(), h.Register)
+		auth.POST("/login", middleware.LoginRateLimiter.Middleware(), h.Login)
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", middleware.AuthMiddleware(), h.Logout)
 	}
