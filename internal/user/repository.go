@@ -43,6 +43,12 @@ func (r *Repository) GetByIDWithPassword(ctx context.Context, userID string) (*U
 	return &user, nil
 }
 
+// allowedUserColumns SQL injection'a karşı izin verilen sütun adları whitelist'i.
+// Yalnızca bu map'teki anahtarlar UPDATE sorgusuna dahil edilir.
+var allowedUserColumns = map[string]bool{
+	"full_name": true,
+}
+
 func (r *Repository) Update(ctx context.Context, userID string, fields map[string]interface{}) (*User, error) {
 	if len(fields) == 0 {
 		return r.GetByID(ctx, userID)
@@ -52,6 +58,10 @@ func (r *Repository) Update(ctx context.Context, userID string, fields map[strin
 	args := []interface{}{}
 	i := 1
 	for col, val := range fields {
+		if !allowedUserColumns[col] {
+			// Whitelist dışındaki sütun adları SQL'e dahil edilmez
+			continue
+		}
 		if i > 1 {
 			query += ", "
 		}
@@ -59,6 +69,11 @@ func (r *Repository) Update(ctx context.Context, userID string, fields map[strin
 		args = append(args, val)
 		i++
 	}
+
+	if len(args) == 0 {
+		return r.GetByID(ctx, userID)
+	}
+
 	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, full_name, email", i)
 	args = append(args, userID)
 

@@ -2,7 +2,6 @@ package budget
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -141,5 +140,3 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Dummy usage of fmt to avoid unused import error
-var _ = fmt.Sprint
