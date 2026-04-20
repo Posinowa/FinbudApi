@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	AppPort    string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	JWTSecret  string
+	AppPort        string
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	JWTSecret      string
+	AllowedOrigins string
 }
 
 func Load() (*Config, error) {
@@ -27,7 +28,8 @@ func Load() (*Config, error) {
 		DBUser:     os.Getenv("DB_USER"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
+		AllowedOrigins: os.Getenv("ALLOWED_ORIGINS"),
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {

@@ -8,8 +8,9 @@ import (
 	"github.com/Posinowa/FinbudApp/internal/auth"
 	"github.com/Posinowa/FinbudApp/internal/budget"
 	"github.com/Posinowa/FinbudApp/internal/category"
+	"github.com/Posinowa/FinbudApp/internal/dashboard"
+	corsmw "github.com/Posinowa/FinbudApp/internal/middleware"
 	"github.com/Posinowa/FinbudApp/internal/transaction"
-        "github.com/Posinowa/FinbudApp/internal/dashboard"
 	"github.com/Posinowa/FinbudApp/internal/user"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
@@ -30,6 +31,9 @@ func main() {
 	jwtpkg.Init(cfg.JWTSecret)
 
 	r := gin.Default()
+
+	// CORS middleware
+	r.Use(corsmw.CORSMiddleware())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
