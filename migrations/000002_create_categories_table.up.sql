@@ -10,14 +10,14 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Varsayılan kategorileri ekle
 INSERT INTO categories (name, icon, type, is_default) VALUES
-('Maaş', '💰', 'income', true),
-('Freelance', '💻', 'income', true),
-('Yatırım', '📈', 'income', true),
-('Diğer Gelir', '💵', 'income', true),
-('Yemek', '🍔', 'expense', true),
-('Ulaşım', '🚗', 'expense', true),
-('Alışveriş', '🛒', 'expense', true),
-('Faturalar', '📄', 'expense', true),
-('Sağlık', '🏥', 'expense', true),
-('Eğlence', '🎬', 'expense', true),
-('Diğer Gider', '📦', 'expense', true);
+('Maaş', 'assets/icons/para.png', 'income', true),
+('Freelance', 'assets/icons/laptop.png', 'income', true),
+('Yatırım', 'assets/icons/para_akis.png', 'income', true),
+('Diğer Gelir', 'assets/icons/gelir_cüzdan.png', 'income', true),
+('Yemek', 'assets/icons/restorant.png', 'expense', true),
+('Ulaşım', 'assets/icons/araba.png', 'expense', true),
+('Alışveriş', 'assets/icons/market_arabasi.png', 'expense', true),
+('Faturalar', 'assets/icons/fatura.png', 'expense', true),
+('Sağlık', 'assets/icons/saglik.png', 'expense', true),
+('Eğlence', 'assets/icons/sinema.png', 'expense', true),
+('Diğer Gider', 'assets/icons/koli.png', 'expense', true);

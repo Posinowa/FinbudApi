@@ -95,16 +95,16 @@ var DefaultCategories = []struct {
 	Type string
 }{
 	// Gelir kategorileri
-	{Name: "Maaş", Icon: "💰", Type: "income"},
-	{Name: "Freelance", Icon: "💻", Type: "income"},
-	{Name: "Yatırım", Icon: "📈", Type: "income"},
-	{Name: "Diğer Gelir", Icon: "💵", Type: "income"},
+	{Name: "Maaş", Icon: "assets/icons/para.png", Type: "income"},
+	{Name: "Freelance", Icon: "assets/icons/laptop.png", Type: "income"},
+	{Name: "Yatırım", Icon: "assets/icons/para_akis.png", Type: "income"},
+	{Name: "Diğer Gelir", Icon: "assets/icons/gelir_cüzdan.png", Type: "income"},
 	// Gider kategorileri
-	{Name: "Yemek", Icon: "🍔", Type: "expense"},
-	{Name: "Ulaşım", Icon: "🚗", Type: "expense"},
-	{Name: "Alışveriş", Icon: "🛒", Type: "expense"},
-	{Name: "Faturalar", Icon: "📄", Type: "expense"},
-	{Name: "Sağlık", Icon: "🏥", Type: "expense"},
-	{Name: "Eğlence", Icon: "🎬", Type: "expense"},
-	{Name: "Diğer Gider", Icon: "📦", Type: "expense"},
+	{Name: "Yemek", Icon: "assets/icons/restorant.png", Type: "expense"},
+	{Name: "Ulaşım", Icon: "assets/icons/araba.png", Type: "expense"},
+	{Name: "Alışveriş", Icon: "assets/icons/market_arabasi.png", Type: "expense"},
+	{Name: "Faturalar", Icon: "assets/icons/fatura.png", Type: "expense"},
+	{Name: "Sağlık", Icon: "assets/icons/saglik.png", Type: "expense"},
+	{Name: "Eğlence", Icon: "assets/icons/sinema.png", Type: "expense"},
+	{Name: "Diğer Gider", Icon: "assets/icons/koli.png", Type: "expense"},
 }
