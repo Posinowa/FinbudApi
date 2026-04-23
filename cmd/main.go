@@ -13,6 +13,7 @@ import (
 	corsmw "github.com/Posinowa/FinbudApp/internal/middleware"
 	"github.com/Posinowa/FinbudApp/internal/transaction"
 	"github.com/Posinowa/FinbudApp/internal/user"
+	"github.com/Posinowa/FinbudApp/pkg/blacklist"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
@@ -30,6 +31,7 @@ func main() {
 	}
 
 	jwtpkg.Init(cfg.JWTSecret)
+	blacklist.Init(db)
 
 	r := gin.Default()
 
