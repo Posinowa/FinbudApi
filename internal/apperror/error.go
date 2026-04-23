@@ -6,8 +6,9 @@ import (
 
 // ErrorResponse represents a standard error response
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
+	Error   string      `json:"error"`
+	Message string      `json:"message"`
+	Details interface{} `json:"details,omitempty"`
 }
 
 // NewErrorResponse creates a new error response
@@ -18,39 +19,34 @@ func NewErrorResponse(err string, message string) ErrorResponse {
 	}
 }
 
-// ValidationError represents a validation error detail
+// ValidationError represents a single validation error detail
 type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-// ValidationErrorResponse represents validation errors
-type ValidationErrorResponse struct {
-	Error  string            `json:"error"`
-	Errors []ValidationError `json:"errors"`
-}
-
 // NewValidationErrorResponse creates a validation error response from binding errors
-func NewValidationErrorResponse(err error) ValidationErrorResponse {
-	var errors []ValidationError
+func NewValidationErrorResponse(err error) ErrorResponse {
+	var details []ValidationError
 
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range validationErrors {
-			errors = append(errors, ValidationError{
+			details = append(details, ValidationError{
 				Field:   e.Field(),
 				Message: getValidationMessage(e),
 			})
 		}
 	} else {
-		errors = append(errors, ValidationError{
+		details = append(details, ValidationError{
 			Field:   "unknown",
 			Message: err.Error(),
 		})
 	}
 
-	return ValidationErrorResponse{
-		Error:  "validation_error",
-		Errors: errors,
+	return ErrorResponse{
+		Error:   "validation_error",
+		Message: "Validasyon hatası",
+		Details: details,
 	}
 }
 

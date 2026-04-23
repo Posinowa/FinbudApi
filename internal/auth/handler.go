@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Posinowa/FinbudApp/internal/apperror"
 	"github.com/Posinowa/FinbudApp/pkg/middleware"
 )
 
@@ -30,13 +31,13 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
 	resp, statusCode, err := h.service.Register(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 
@@ -46,13 +47,13 @@ func (h *Handler) Register(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
 	resp, statusCode, err := h.service.Login(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("unauthorized", err.Error()))
 		return
 	}
 
@@ -62,13 +63,13 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
 	resp, statusCode, err := h.service.Refresh(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("unauthorized", err.Error()))
 		return
 	}
 
@@ -78,7 +79,7 @@ func (h *Handler) Refresh(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
@@ -90,7 +91,7 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	statusCode, err := h.service.Logout(c.Request.Context(), req.RefreshToken, accessToken)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 

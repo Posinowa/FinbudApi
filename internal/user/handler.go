@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Posinowa/FinbudApp/internal/apperror"
 	"github.com/Posinowa/FinbudApp/pkg/middleware"
 )
 
@@ -32,7 +33,7 @@ func (h *Handler) GetMe(c *gin.Context) {
 
 	user, statusCode, err := h.service.GetMe(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 
@@ -44,13 +45,13 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 
 	var req UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
 	user, statusCode, err := h.service.UpdateMe(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 
@@ -62,13 +63,13 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 
 	var req UpdatePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
 		return
 	}
 
 	statusCode, err := h.service.UpdatePassword(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 
@@ -80,7 +81,7 @@ func (h *Handler) DeleteMe(c *gin.Context) {
 
 	statusCode, err := h.service.DeleteMe(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
 		return
 	}
 
