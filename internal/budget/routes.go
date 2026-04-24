@@ -16,6 +16,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 
 	budgets := router.Group("/budgets")
 	budgets.Use(middleware.AuthMiddleware())
+	budgets.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		budgets.GET("", handler.GetAll)
                 budgets.GET("/:id", handler.GetByID)

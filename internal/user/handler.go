@@ -20,6 +20,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	users := r.Group("/users")
 	users.Use(middleware.AuthMiddleware())
+	users.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		users.GET("/me", h.GetMe)
 		users.PUT("/me", h.UpdateMe)

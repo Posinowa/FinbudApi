@@ -15,6 +15,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 
 	dashboardGroup := router.Group("/dashboard")
 	dashboardGroup.Use(middleware.AuthMiddleware())
+	dashboardGroup.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		dashboardGroup.GET("/summary", handler.GetSummary)
 	}

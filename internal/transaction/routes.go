@@ -16,6 +16,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *sqlx.DB, categoryRepo *category
 
 	transactions := router.Group("/transactions")
 	transactions.Use(middleware.AuthMiddleware())
+	transactions.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		transactions.POST("", handler.Create)
 		transactions.GET("", handler.GetAll)

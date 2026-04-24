@@ -18,6 +18,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	categories := r.Group("/categories")
 	categories.Use(middleware.AuthMiddleware())
+	categories.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		categories.GET("", h.GetAll)
                 categories.GET("/:id", h.GetByID)

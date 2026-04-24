@@ -70,7 +70,7 @@ func (rl *RateLimiter) cleanupLoop() {
 	}
 }
 
-// Middleware Gin middleware olarak rate limiting uygular.
+// Middleware IP bazlı rate limiting uygular.
 // Limit aşıldığında 429 Too Many Requests döndürür ve isteği durdurur.
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -89,10 +89,35 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	}
 }
 
+// UserMiddleware kullanıcı bazlı rate limiting uygular.
+// AuthMiddleware'den sonra kullanılmalıdır; context'teki user_id ile sınırlama yapar.
+// user_id bulunamazsa IP bazlı devreye girer.
+func (rl *RateLimiter) UserMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		key := c.GetString("user_id")
+		if key == "" {
+			key = c.ClientIP()
+		}
+		limiter := rl.getLimiter(key)
+
+		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Çok fazla istek gönderildi. Lütfen bir süre bekleyip tekrar deneyin.",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // Önceden tanımlanmış rate limiter örnekleri:
-// LoginRateLimiter    → dakikada 5 istek, burst 5  (brute force koruması)
+// LoginRateLimiter    → dakikada 5 istek, burst 5   (brute force koruması)
 // RegisterRateLimiter → dakikada 3 istek, burst 3
+// APIUserRateLimiter  → dakikada 60 istek, burst 20 (kimliği doğrulanmış kullanıcılar)
 var (
 	LoginRateLimiter    = NewRateLimiter(rate.Limit(5.0/60.0), 5)
 	RegisterRateLimiter = NewRateLimiter(rate.Limit(3.0/60.0), 3)
+	APIUserRateLimiter  = NewRateLimiter(rate.Limit(60.0/60.0), 20)
 )
