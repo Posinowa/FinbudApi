@@ -24,7 +24,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	{
 		users.GET("/me", h.GetMe)
 		users.PUT("/me", h.UpdateMe)
-		users.PUT("/me/password", h.UpdatePassword)
+		users.PUT("/me/password", middleware.PasswordChangeRateLimiter.UserMiddleware(), h.UpdatePassword)
 		users.DELETE("/me", h.DeleteMe)
 	}
 }

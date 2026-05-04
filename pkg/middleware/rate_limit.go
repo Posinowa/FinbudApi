@@ -117,7 +117,8 @@ func (rl *RateLimiter) UserMiddleware() gin.HandlerFunc {
 // RegisterRateLimiter → dakikada 3 istek, burst 3
 // APIUserRateLimiter  → dakikada 60 istek, burst 20 (kimliği doğrulanmış kullanıcılar)
 var (
-	LoginRateLimiter    = NewRateLimiter(rate.Limit(5.0/60.0), 5)
-	RegisterRateLimiter = NewRateLimiter(rate.Limit(3.0/60.0), 3)
-	APIUserRateLimiter  = NewRateLimiter(rate.Limit(60.0/60.0), 20)
+	LoginRateLimiter          = NewRateLimiter(rate.Limit(5.0/60.0), 5)
+	RegisterRateLimiter       = NewRateLimiter(rate.Limit(3.0/60.0), 3)
+	APIUserRateLimiter        = NewRateLimiter(rate.Limit(60.0/60.0), 20)
+	PasswordChangeRateLimiter = NewRateLimiter(rate.Limit(3.0/60.0), 3)
 )
