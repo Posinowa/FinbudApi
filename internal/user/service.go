@@ -89,6 +89,9 @@ func (s *Service) UpdatePassword(ctx context.Context, userID string, req UpdateP
 		return http.StatusInternalServerError, err
 	}
 
+	// Şifre değişince diğer cihazlardaki tüm oturumları geçersiz kıl
+	_ = s.repo.DeleteAllRefreshTokens(ctx, userID)
+
 	return http.StatusOK, nil
 }
 

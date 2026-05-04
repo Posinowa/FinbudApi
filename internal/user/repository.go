@@ -91,6 +91,12 @@ func (r *Repository) UpdatePassword(ctx context.Context, userID, passwordHash st
 	return err
 }
 
+func (r *Repository) DeleteAllRefreshTokens(ctx context.Context, userID string) error {
+	query := `DELETE FROM refresh_tokens WHERE user_id = $1`
+	_, err := r.db.ExecContext(ctx, query, userID)
+	return err
+}
+
 func (r *Repository) Delete(ctx context.Context, userID string) error {
 	query := `DELETE FROM users WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, userID)
