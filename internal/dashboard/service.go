@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +141,11 @@ func (s *Service) getBudgetSummary(ctx context.Context, userID string, year int,
 
 		budgets = append(budgets, budget)
 	}
+
+	// Bütçeleri kullanım yüzdesine göre çoktan aza sırala
+	sort.Slice(budgets, func(i, j int) bool {
+		return budgets[i].PercentUsed > budgets[j].PercentUsed
+	})
 
 	return budgets, nil
 }
