@@ -71,6 +71,9 @@ func main() {
 	// Budget routes
 	budget.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
 
+	// Recurring budget job — her ayın 1'inde tekrarlayan bütçeleri otomatik oluşturur
+	budget.StartRecurringJob(budget.NewRepository(db))
+
          // Dashboard routes
         dashboard.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
  

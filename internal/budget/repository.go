@@ -18,7 +18,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 func (r *Repository) GetAllByMonth(ctx context.Context, userID string, year int, month int) ([]BudgetWithSpent, error) {
 	query := `
 		SELECT
-			b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.created_at, b.updated_at,
+			b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.is_recurring, b.created_at, b.updated_at,
 			COALESCE(SUM(
 				CASE WHEN t.type = 'expense' AND EXTRACT(YEAR FROM t.date) = $2 AND EXTRACT(MONTH FROM t.date) = $3
 				THEN t.amount ELSE 0 END
@@ -26,7 +26,7 @@ func (r *Repository) GetAllByMonth(ctx context.Context, userID string, year int,
 		FROM budgets b
 		LEFT JOIN transactions t ON t.category_id = b.category_id AND t.user_id = b.user_id
 		WHERE b.user_id = $1::uuid AND b.year = $2 AND b.month = $3
-		GROUP BY b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.created_at, b.updated_at
+		GROUP BY b.id, b.user_id, b.category_id, b.amount, b.month, b.year, b.is_recurring, b.created_at, b.updated_at
 		ORDER BY b.created_at DESC
 	`
 
@@ -40,7 +40,7 @@ func (r *Repository) GetAllByMonth(ctx context.Context, userID string, year int,
 	for rows.Next() {
 		var b BudgetWithSpent
 		err := rows.Scan(
-			&b.ID, &b.UserID, &b.CategoryID, &b.Amount, &b.Month, &b.Year, &b.CreatedAt, &b.UpdatedAt,
+			&b.ID, &b.UserID, &b.CategoryID, &b.Amount, &b.Month, &b.Year, &b.IsRecurring, &b.CreatedAt, &b.UpdatedAt,
 			&b.Spent,
 		)
 		if err != nil {
@@ -56,7 +56,7 @@ func (r *Repository) GetAllByMonth(ctx context.Context, userID string, year int,
 func (r *Repository) GetByID(ctx context.Context, id string) (*Budget, error) {
 	var b Budget
 	query := `
-		SELECT id, user_id, category_id, amount, month, year, created_at, updated_at
+		SELECT id, user_id, category_id, amount, month, year, is_recurring, created_at, updated_at
 		FROM budgets WHERE id = $1::uuid
 	`
 	err := r.db.GetContext(ctx, &b, query, id)
@@ -88,11 +88,11 @@ func (r *Repository) GetSpentAmount(ctx context.Context, userID string, category
 // Create inserts a new budget
 func (r *Repository) Create(ctx context.Context, b *Budget) error {
 	query := `
-		INSERT INTO budgets (id, user_id, category_id, amount, month, year, created_at, updated_at)
-		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8)
+		INSERT INTO budgets (id, user_id, category_id, amount, month, year, is_recurring, created_at, updated_at)
+		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9)
 	`
 	_, err := r.db.ExecContext(ctx, query,
-		b.ID, b.UserID, b.CategoryID, b.Amount, b.Month, b.Year, b.CreatedAt, b.UpdatedAt,
+		b.ID, b.UserID, b.CategoryID, b.Amount, b.Month, b.Year, b.IsRecurring, b.CreatedAt, b.UpdatedAt,
 	)
 	return err
 }
@@ -140,3 +140,31 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// GetRecurringTemplates returns the most recent recurring budget per (user_id, category_id)
+func (r *Repository) GetRecurringTemplates(ctx context.Context) ([]Budget, error) {
+	query := `
+		SELECT DISTINCT ON (user_id, category_id)
+			id, user_id, category_id, amount, month, year, is_recurring, created_at, updated_at
+		FROM budgets
+		WHERE is_recurring = true
+		ORDER BY user_id, category_id, year DESC, month DESC
+	`
+	rows, err := r.db.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var budgets []Budget
+	for rows.Next() {
+		var b Budget
+		err := rows.Scan(
+			&b.ID, &b.UserID, &b.CategoryID, &b.Amount, &b.Month, &b.Year, &b.IsRecurring, &b.CreatedAt, &b.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		budgets = append(budgets, b)
+	}
+	return budgets, nil
+}

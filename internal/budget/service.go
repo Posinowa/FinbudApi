@@ -109,14 +109,15 @@ func (s *Service) Create(ctx context.Context, userID string, req CreateBudgetReq
 
 	// Create budget
 	budget := &Budget{
-		ID:         uuid.New().String(),
-		UserID:     userID,
-		CategoryID: req.CategoryID,
-		Amount:     req.Limit,
-		Month:      month,
-		Year:       year,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          uuid.New().String(),
+		UserID:      userID,
+		CategoryID:  req.CategoryID,
+		Amount:      req.Limit,
+		Month:       month,
+		Year:        year,
+		IsRecurring: req.IsRecurring,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	// Save to database

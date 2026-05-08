@@ -18,14 +18,15 @@ var (
 
 // Budget represents a budget for a category
 type Budget struct {
-	ID         string    `db:"id" json:"id"`
-	UserID     string    `db:"user_id" json:"user_id"`
-	CategoryID string    `db:"category_id" json:"category_id"`
-	Amount     float64   `db:"amount" json:"amount"`
-	Month      int       `db:"month" json:"month"`
-	Year       int       `db:"year" json:"year"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	ID          string    `db:"id" json:"id"`
+	UserID      string    `db:"user_id" json:"user_id"`
+	CategoryID  string    `db:"category_id" json:"category_id"`
+	Amount      float64   `db:"amount" json:"amount"`
+	Month       int       `db:"month" json:"month"`
+	Year        int       `db:"year" json:"year"`
+	IsRecurring bool      `db:"is_recurring" json:"is_recurring"`
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
 // BudgetWithCategory includes category details
@@ -42,6 +43,7 @@ type BudgetResponse struct {
 	Spent       float64          `json:"spent"`
 	Remaining   float64          `json:"remaining"`
 	PercentUsed float64          `json:"percent_used"`
+	IsRecurring bool             `json:"is_recurring"`
 }
 
 // CategoryResponse represents nested category in budget response
@@ -79,6 +81,7 @@ func ToBudgetResponse(b *BudgetWithSpent) BudgetResponse {
 		Spent:       b.Spent,
 		Remaining:   remaining,
 		PercentUsed: percentUsed,
+		IsRecurring: b.IsRecurring,
 	}
 
 	if b.Category != nil {
@@ -94,9 +97,10 @@ func ToBudgetResponse(b *BudgetWithSpent) BudgetResponse {
 }
 // CreateBudgetRequest represents the request body for creating a budget
 type CreateBudgetRequest struct {
-	CategoryID string  `json:"category_id" binding:"required,uuid"`
-	Limit      float64 `json:"limit" binding:"required,gt=0"`
-	Month      string  `json:"month" binding:"required"`
+	CategoryID  string  `json:"category_id" binding:"required,uuid"`
+	Limit       float64 `json:"limit" binding:"required,gt=0"`
+	Month       string  `json:"month" binding:"required"`
+	IsRecurring bool    `json:"is_recurring"`
 }
 
 // CreateBudgetResponse represents the response for created budget
