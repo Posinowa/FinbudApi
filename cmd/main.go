@@ -46,6 +46,10 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	r.GET("/status", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"maintenance": cfg.MaintenanceMode})
+	})
+
 	// Auth routes
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo)

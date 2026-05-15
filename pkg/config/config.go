@@ -8,14 +8,15 @@ import (
 )
 
 type Config struct {
-	AppPort        string
-	DBHost         string
-	DBPort         string
-	DBUser         string
-	DBPassword     string
-	DBName         string
-	JWTSecret      string
-	AllowedOrigins string
+	AppPort         string
+	DBHost          string
+	DBPort          string
+	DBUser          string
+	DBPassword      string
+	DBName          string
+	JWTSecret       string
+	AllowedOrigins  string
+	MaintenanceMode bool
 }
 
 func Load() (*Config, error) {
@@ -28,14 +29,15 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		AppPort:    appPort,
-		DBHost:     os.Getenv("DB_HOST"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		AllowedOrigins: os.Getenv("ALLOWED_ORIGINS"),
+		AppPort:         appPort,
+		DBHost:          os.Getenv("DB_HOST"),
+		DBPort:          os.Getenv("DB_PORT"),
+		DBUser:          os.Getenv("DB_USER"),
+		DBPassword:      os.Getenv("DB_PASSWORD"),
+		DBName:          os.Getenv("DB_NAME"),
+		JWTSecret:       os.Getenv("JWT_SECRET"),
+		AllowedOrigins:  os.Getenv("ALLOWED_ORIGINS"),
+		MaintenanceMode: os.Getenv("MAINTENANCE_MODE") == "true",
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {
