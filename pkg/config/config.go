@@ -21,8 +21,14 @@ type Config struct {
 func Load() (*Config, error) {
 	_ = godotenv.Load(".env") // .env production ortamında olmayabilir, hata kasıtlı olarak görmezden gelinir
 
+	// Cloud Run PORT env var'ını da destekle
+	appPort := os.Getenv("PORT")
+	if appPort == "" {
+		appPort = os.Getenv("APP_PORT")
+	}
+
 	cfg := &Config{
-		AppPort:    os.Getenv("APP_PORT"),
+		AppPort:    appPort,
 		DBHost:     os.Getenv("DB_HOST"),
 		DBPort:     os.Getenv("DB_PORT"),
 		DBUser:     os.Getenv("DB_USER"),
