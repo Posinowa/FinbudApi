@@ -168,7 +168,8 @@ func (s *Service) getRecentTransactions(ctx context.Context, userID string, limi
 
 	var transactions []RecentTransaction
 	for rows.Next() {
-		var id, txType, categoryID string
+		var id, txType string
+		var categoryID *string
 		var amount float64
 		var description *string
 		var date time.Time
@@ -186,14 +187,16 @@ func (s *Service) getRecentTransactions(ctx context.Context, userID string, limi
 			Date:        date,
 		}
 
-		// Get category
-		cat, err := s.categoryRepo.GetByID(ctx, categoryID)
-		if err == nil {
-			tx.Category = CategoryInfo{
-				ID:   cat.ID,
-				Name: cat.Name,
-				Icon: cat.Icon,
-				Type: cat.Type,
+		// Get category (NULL olabilir — kategori silinmişse)
+		if categoryID != nil {
+			cat, err := s.categoryRepo.GetByID(ctx, *categoryID)
+			if err == nil {
+				tx.Category = CategoryInfo{
+					ID:   cat.ID,
+					Name: cat.Name,
+					Icon: cat.Icon,
+					Type: cat.Type,
+				}
 			}
 		}
 

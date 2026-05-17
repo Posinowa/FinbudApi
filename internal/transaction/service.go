@@ -49,10 +49,11 @@ func (s *Service) Create(ctx context.Context, input CreateTransactionInput) (*Tr
 	}
 
 	// Create transaction
+	catID := input.CategoryID
 	transaction := &Transaction{
 		ID:          uuid.New().String(),
 		UserID:      input.UserID,
-		CategoryID:  input.CategoryID,
+		CategoryID:  &catID,
 		Amount:      input.Amount,
 		Type:        input.Type,
 		Date:        date,
@@ -86,9 +87,11 @@ func (s *Service) GetByID(ctx context.Context, id string, userID string) (*Trans
 	}
 
 	// Get category
-	cat, err := s.categoryRepo.GetByID(ctx, result.CategoryID)
-	if err == nil {
-		result.Category = cat
+	if result.CategoryID != nil {
+		cat, err := s.categoryRepo.GetByID(ctx, *result.CategoryID)
+		if err == nil {
+			result.Category = cat
+		}
 	}
 
 	return result, nil
@@ -118,9 +121,11 @@ func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionF
 		twc := TransactionWithCategory{Transaction: t}
 		
 		// Get category for each transaction
-		cat, err := s.categoryRepo.GetByID(ctx, t.CategoryID)
-		if err == nil {
-			twc.Category = cat
+		if t.CategoryID != nil {
+			cat, err := s.categoryRepo.GetByID(ctx, *t.CategoryID)
+			if err == nil {
+				twc.Category = cat
+			}
 		}
 		
 		responseData = append(responseData, ToTransactionResponse(&twc))
@@ -173,7 +178,7 @@ func (s *Service) Update(ctx context.Context, id string, userID string, req Upda
 		if cat.UserID != nil && *cat.UserID != userID {
 			return nil, ErrCategoryNotFound
 		}
-		result.CategoryID = *req.CategoryID
+		result.CategoryID = req.CategoryID
 	}
 
 	if req.Description != nil {
@@ -197,9 +202,11 @@ func (s *Service) Update(ctx context.Context, id string, userID string, req Upda
 	}
 
 	// Get category for response
-	cat, err := s.categoryRepo.GetByID(ctx, result.CategoryID)
-	if err == nil {
-		result.Category = cat
+	if result.CategoryID != nil {
+		cat, err := s.categoryRepo.GetByID(ctx, *result.CategoryID)
+		if err == nil {
+			result.Category = cat
+		}
 	}
 
 	return result, nil

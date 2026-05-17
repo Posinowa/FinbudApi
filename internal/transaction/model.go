@@ -29,7 +29,7 @@ var (
 type Transaction struct {
 	ID          string          `db:"id" json:"id"`
 	UserID      string          `db:"user_id" json:"user_id"`
-	CategoryID  string          `db:"category_id" json:"category_id"`
+	CategoryID  *string         `db:"category_id" json:"category_id"`
 	Amount      float64         `db:"amount" json:"amount"`
 	Type        TransactionType `db:"type" json:"type"`
 	Date        time.Time       `db:"date" json:"date"`
