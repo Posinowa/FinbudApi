@@ -44,6 +44,21 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 	return &user, nil
 }
 
+// CreateGoogleUser creates a user without a password (Google OAuth)
+func (r *Repository) CreateGoogleUser(ctx context.Context, name, email string) (string, error) {
+	var userID string
+	query := `
+		INSERT INTO users (full_name, email)
+		VALUES ($1, $2)
+		RETURNING id
+	`
+	err := r.db.QueryRowContext(ctx, query, name, email).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+	return userID, nil
+}
+
 func (r *Repository) SaveRefreshToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
 	query := `
 		INSERT INTO refresh_tokens (user_id, token, expires_at)
@@ -81,7 +96,7 @@ func (r *Repository) DeleteRefreshToken(ctx context.Context, token string) error
 
 func (r *Repository) GetUserByID(ctx context.Context, userID string) (*User, error) {
 	var user User
-	query := `SELECT id, full_name, email, password_hash FROM users WHERE id = $1`
+	query := `SELECT id, full_name, email, password_hash FROM users WHERE id = $1::uuid`
 	err := r.db.GetContext(ctx, &user, query, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

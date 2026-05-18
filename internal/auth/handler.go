@@ -23,6 +23,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	{
 		auth.POST("/register", middleware.RegisterRateLimiter.Middleware(), h.Register)
 		auth.POST("/login", middleware.LoginRateLimiter.Middleware(), h.Login)
+		auth.POST("/google", middleware.LoginRateLimiter.Middleware(), h.GoogleLogin)
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", middleware.AuthMiddleware(), h.Logout)
 	}
@@ -68,6 +69,22 @@ func (h *Handler) Refresh(c *gin.Context) {
 	}
 
 	resp, statusCode, err := h.service.Refresh(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(statusCode, apperror.NewErrorResponse("unauthorized", err.Error()))
+		return
+	}
+
+	c.JSON(statusCode, resp)
+}
+
+func (h *Handler) GoogleLogin(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
+		return
+	}
+
+	resp, statusCode, err := h.service.GoogleLogin(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(statusCode, apperror.NewErrorResponse("unauthorized", err.Error()))
 		return
