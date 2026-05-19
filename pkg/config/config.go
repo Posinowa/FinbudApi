@@ -17,6 +17,9 @@ type Config struct {
 	JWTSecret       string
 	AllowedOrigins  string
 	MaintenanceMode bool
+	UpdateAvailable bool
+	AndroidStoreURL string
+	IOSStoreURL     string
 }
 
 func Load() (*Config, error) {
@@ -38,6 +41,9 @@ func Load() (*Config, error) {
 		JWTSecret:       os.Getenv("JWT_SECRET"),
 		AllowedOrigins:  os.Getenv("ALLOWED_ORIGINS"),
 		MaintenanceMode: os.Getenv("MAINTENANCE_MODE") == "true",
+		UpdateAvailable: os.Getenv("UPDATE_AVAILABLE") == "true",
+		AndroidStoreURL: os.Getenv("ANDROID_STORE_URL"),
+		IOSStoreURL:     os.Getenv("IOS_STORE_URL"),
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {

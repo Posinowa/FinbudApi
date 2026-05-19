@@ -47,7 +47,12 @@ func main() {
 	})
 
 	r.GET("/status", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"maintenance": cfg.MaintenanceMode})
+		c.JSON(http.StatusOK, gin.H{
+			"maintenance":       cfg.MaintenanceMode,
+			"update_available":  cfg.UpdateAvailable,
+			"android_store_url": cfg.AndroidStoreURL,
+			"ios_store_url":     cfg.IOSStoreURL,
+		})
 	})
 
 	// Auth routes
