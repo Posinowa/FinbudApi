@@ -20,6 +20,10 @@ type Config struct {
 	UpdateAvailable bool
 	AndroidStoreURL string
 	IOSStoreURL     string
+	SMTPHost        string
+	SMTPPort        string
+	SMTPUser        string
+	SMTPPassword    string
 }
 
 func Load() (*Config, error) {
@@ -44,6 +48,10 @@ func Load() (*Config, error) {
 		UpdateAvailable: os.Getenv("UPDATE_AVAILABLE") == "true",
 		AndroidStoreURL: os.Getenv("ANDROID_STORE_URL"),
 		IOSStoreURL:     os.Getenv("IOS_STORE_URL"),
+		SMTPHost:        getEnvOrDefault("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:        getEnvOrDefault("SMTP_PORT", "587"),
+		SMTPUser:        os.Getenv("SMTP_USER"),
+		SMTPPassword:    os.Getenv("SMTP_PASSWORD"),
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {
@@ -57,4 +65,11 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func getEnvOrDefault(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return defaultVal
 }

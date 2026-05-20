@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Posinowa/FinbudApp/internal/auth"
+	"github.com/Posinowa/FinbudApp/pkg/email"
 	"github.com/Posinowa/FinbudApp/internal/budget"
 	"github.com/Posinowa/FinbudApp/internal/category"
 	"github.com/Posinowa/FinbudApp/internal/dashboard"
@@ -57,7 +58,8 @@ func main() {
 
 	// Auth routes
 	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo)
+	emailSender := email.NewSender(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword)
+	authService := auth.NewServiceWithEmail(authRepo, emailSender)
 	authHandler := auth.NewHandler(authService)
 	authHandler.RegisterRoutes(r)
 

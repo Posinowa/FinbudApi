@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Posinowa/FinbudApp/internal/validator"
@@ -23,11 +24,20 @@ type User struct {
 }
 
 type Service struct {
-	repo *Repository
+	repo        *Repository
+	emailSender emailSender
+}
+
+type emailSender interface {
+	Send(to, subject, htmlBody string) error
 }
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func NewServiceWithEmail(repo *Repository, sender emailSender) *Service {
+	return &Service{repo: repo, emailSender: sender}
 }
 
 type RegisterRequest struct {
@@ -61,6 +71,7 @@ var ErrEmailAlreadyExists = errors.New("email already exists")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrInvalidToken = errors.New("invalid or expired token")
 var ErrGoogleTokenInvalid = errors.New("geçersiz Google token")
+var ErrInvalidResetToken = errors.New("geçersiz veya süresi dolmuş sıfırlama bağlantısı")
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, int, error) {
 	if err := validator.ValidatePasswordStrength(req.Password); err != nil {
@@ -170,6 +181,107 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (*AuthRespons
 		ExpiresIn:    3600,
 	}, http.StatusOK, nil
 }
+// ForgotPasswordRequest represents the request body for forgot password
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+// ResetPasswordRequest represents the request body for resetting password
+type ResetPasswordRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+// ForgotPassword sends a password reset email
+func (s *Service) ForgotPassword(ctx context.Context, req ForgotPasswordRequest) (int, error) {
+	user, err := s.repo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// Güvenlik: kullanıcı yoksa da başarılı dön (email enumeration önleme)
+	if user == nil {
+		return http.StatusOK, nil
+	}
+
+	// Token oluştur
+	token := uuid.New().String()
+	expiresAt := time.Now().Add(1 * time.Hour)
+
+	if err := s.repo.CreatePasswordResetToken(ctx, user.ID, token, expiresAt); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// Email gönder
+	if s.emailSender != nil {
+		resetLink := fmt.Sprintf("finbud://reset-password?token=%s", token)
+		subject := "Finbud - Şifre Sıfırlama"
+		body := buildResetEmailHTML(user.FullName, resetLink)
+		// Email hatası kullanıcıya yansıtılmaz ama loglanır
+		_ = s.emailSender.Send(req.Email, subject, body)
+	}
+
+	return http.StatusOK, nil
+}
+
+// ResetPassword resets a user's password using a valid token
+func (s *Service) ResetPassword(ctx context.Context, req ResetPasswordRequest) (int, error) {
+	if err := validator.ValidatePasswordStrength(req.NewPassword); err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	rt, err := s.repo.GetPasswordResetToken(ctx, req.Token)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	if rt == nil || rt.UsedAt != nil || rt.ExpiresAt.Before(time.Now()) {
+		return http.StatusBadRequest, ErrInvalidResetToken
+	}
+
+	// Yeni şifreyi hashle
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// Şifreyi güncelle
+	if err := s.repo.UpdatePassword(ctx, rt.UserID, string(hashedPassword)); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// Token'ı kullanıldı olarak işaretle
+	_ = s.repo.MarkResetTokenUsed(ctx, req.Token)
+
+	// Tüm aktif oturumları geçersiz kıl
+	_ = s.repo.DeleteAllRefreshTokens(ctx, rt.UserID)
+
+	return http.StatusOK, nil
+}
+
+// buildResetEmailHTML generates the HTML email body
+func buildResetEmailHTML(name, resetLink string) string {
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 32px;">
+    <h2 style="color: #2D3748; margin-bottom: 8px;">Şifre Sıfırlama</h2>
+    <p style="color: #4A5568;">Merhaba %s,</p>
+    <p style="color: #4A5568;">Finbud hesabınız için şifre sıfırlama talebinde bulundunuz.</p>
+    <p style="color: #4A5568;">Aşağıdaki butona telefonu ile tıklayarak yeni şifrenizi oluşturabilirsiniz. Bu bağlantı <strong>1 saat</strong> geçerlidir.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="%s"
+         style="background: #4F5D75; color: #fff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+        Şifremi Sıfırla
+      </a>
+    </div>
+    <p style="color: #718096; font-size: 13px;">Bu talebi siz yapmadıysanız bu e-postayı görmezden gelebilirsiniz.</p>
+    <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0;">
+    <p style="color: #A0AEC0; font-size: 12px; text-align: center;">Finbud &mdash; Kişisel Finans Yönetimi</p>
+  </div>
+</body>
+</html>`, name, resetLink)
+}
+
 // GoogleLoginRequest represents the request body for Google login
 type GoogleLoginRequest struct {
 	IDToken string `json:"id_token" binding:"required"`

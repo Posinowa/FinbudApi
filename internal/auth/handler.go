@@ -24,6 +24,8 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		auth.POST("/register", middleware.RegisterRateLimiter.Middleware(), h.Register)
 		auth.POST("/login", middleware.LoginRateLimiter.Middleware(), h.Login)
 		auth.POST("/google", middleware.LoginRateLimiter.Middleware(), h.GoogleLogin)
+		auth.POST("/forgot-password", middleware.LoginRateLimiter.Middleware(), h.ForgotPassword)
+		auth.POST("/reset-password", h.ResetPassword)
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", middleware.AuthMiddleware(), h.Logout)
 	}
@@ -75,6 +77,38 @@ func (h *Handler) Refresh(c *gin.Context) {
 	}
 
 	c.JSON(statusCode, resp)
+}
+
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
+		return
+	}
+
+	statusCode, err := h.service.ForgotPassword(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
+		return
+	}
+
+	c.JSON(statusCode, gin.H{"message": "Sifre sifirlama e-postasi gonderildi"})
+}
+
+func (h *Handler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apperror.NewValidationErrorResponse(err))
+		return
+	}
+
+	statusCode, err := h.service.ResetPassword(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(statusCode, apperror.NewErrorResponse("error", err.Error()))
+		return
+	}
+
+	c.JSON(statusCode, gin.H{"message": "Sifre basariyla sifirlandi"})
 }
 
 func (h *Handler) GoogleLogin(c *gin.Context) {
