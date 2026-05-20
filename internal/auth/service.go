@@ -214,11 +214,14 @@ func (s *Service) ForgotPassword(ctx context.Context, req ForgotPasswordRequest)
 
 	// Email gönder
 	if s.emailSender != nil {
-		resetLink := fmt.Sprintf("finbud://reset-password?token=%s", token)
+		resetLink := fmt.Sprintf("https://finbud-api-197224562444.europe-west1.run.app/reset-password?token=%s", token)
 		subject := "Finbud - Şifre Sıfırlama"
 		body := buildResetEmailHTML(user.FullName, resetLink)
-		// Email hatası kullanıcıya yansıtılmaz ama loglanır
-		_ = s.emailSender.Send(req.Email, subject, body)
+		if emailErr := s.emailSender.Send(req.Email, subject, body); emailErr != nil {
+			fmt.Printf("[EMAIL ERROR] Sifre sifirlama maili gonderilemedi (%s): %v\n", req.Email, emailErr)
+		} else {
+			fmt.Printf("[EMAIL OK] Sifre sifirlama maili gonderildi: %s\n", req.Email)
+		}
 	}
 
 	return http.StatusOK, nil
