@@ -2,12 +2,17 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
+	"strings"
 	"time"
 
+	golangJWT "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
@@ -71,6 +76,7 @@ var ErrEmailAlreadyExists = errors.New("email already exists")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrInvalidToken = errors.New("invalid or expired token")
 var ErrGoogleTokenInvalid = errors.New("geçersiz Google token")
+var ErrAppleTokenInvalid = errors.New("geçersiz Apple token")
 var ErrInvalidResetToken = errors.New("geçersiz veya süresi dolmuş sıfırlama bağlantısı")
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, int, error) {
@@ -378,6 +384,256 @@ func verifyGoogleToken(idToken string) (*googleTokenInfo, error) {
 
 	return &info, nil
 }
+
+// ── Apple Sign-In ──────────────────────────────────────────────────────────────
+
+// AppleLoginRequest represents the request body for Apple login
+type AppleLoginRequest struct {
+	IdentityToken string `json:"identity_token" binding:"required"`
+	FullName      string `json:"full_name"`
+	Email         string `json:"email"`
+}
+
+// appleTokenInfo holds verified claims from Apple identity token
+type appleTokenInfo struct {
+	Sub           string // Apple user ID (stable, always present)
+	Email         string // Only on first sign-in
+	EmailVerified bool
+}
+
+// appleJWKS represents Apple's public key set
+type appleJWKS struct {
+	Keys []appleJWK `json:"keys"`
+}
+
+type appleJWK struct {
+	Kty string `json:"kty"`
+	Kid string `json:"kid"`
+	Use string `json:"use"`
+	Alg string `json:"alg"`
+	N   string `json:"n"`
+	E   string `json:"e"`
+}
+
+// appleClaims holds the JWT claims from Apple's identity token
+type appleClaims struct {
+	golangJWT.RegisteredClaims
+	Email         string `json:"email"`
+	EmailVerified any    `json:"email_verified"` // Apple sends bool or string
+}
+
+// fetchApplePublicKeys fetches Apple's JWKS from their endpoint
+func fetchApplePublicKeys() (*appleJWKS, error) {
+	resp, err := http.Get("https://appleid.apple.com/auth/keys")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var jwks appleJWKS
+	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		return nil, err
+	}
+	return &jwks, nil
+}
+
+// jwkToRSAPublicKey converts a JWK to an RSA public key
+func jwkToRSAPublicKey(key appleJWK) (*rsa.PublicKey, error) {
+	nBytes, err := base64.RawURLEncoding.DecodeString(key.N)
+	if err != nil {
+		return nil, fmt.Errorf("n decode hatası: %w", err)
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(key.E)
+	if err != nil {
+		return nil, fmt.Errorf("e decode hatası: %w", err)
+	}
+
+	n := new(big.Int).SetBytes(nBytes)
+	e := int(new(big.Int).SetBytes(eBytes).Int64())
+
+	return &rsa.PublicKey{N: n, E: e}, nil
+}
+
+// getJWTHeaderKid extracts the kid from JWT header without full verification
+func getJWTHeaderKid(tokenStr string) (string, error) {
+	parts := strings.Split(tokenStr, ".")
+	if len(parts) != 3 {
+		return "", errors.New("geçersiz JWT formatı")
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return "", fmt.Errorf("header decode hatası: %w", err)
+	}
+
+	var header struct {
+		Kid string `json:"kid"`
+	}
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
+		return "", fmt.Errorf("header parse hatası: %w", err)
+	}
+
+	return header.Kid, nil
+}
+
+// verifyAppleToken verifies an Apple identity token and returns its claims
+func verifyAppleToken(identityToken string) (*appleTokenInfo, error) {
+	// 1. JWT header'dan kid'i al
+	kid, err := getJWTHeaderKid(identityToken)
+	if err != nil {
+		return nil, ErrAppleTokenInvalid
+	}
+
+	// 2. Apple'ın public key'lerini çek
+	jwks, err := fetchApplePublicKeys()
+	if err != nil {
+		return nil, fmt.Errorf("Apple public keys alınamadı: %w", err)
+	}
+
+	// 3. Eşleşen key'i bul
+	var matchedKey *appleJWK
+	for _, k := range jwks.Keys {
+		if k.Kid == kid {
+			kCopy := k
+			matchedKey = &kCopy
+			break
+		}
+	}
+	if matchedKey == nil {
+		return nil, ErrAppleTokenInvalid
+	}
+
+	// 4. RSA public key'e çevir
+	rsaKey, err := jwkToRSAPublicKey(*matchedKey)
+	if err != nil {
+		return nil, ErrAppleTokenInvalid
+	}
+
+	// 5. JWT'yi doğrula ve claim'leri çıkar
+	token, err := golangJWT.ParseWithClaims(
+		identityToken,
+		&appleClaims{},
+		func(t *golangJWT.Token) (interface{}, error) {
+			if _, ok := t.Method.(*golangJWT.SigningMethodRSA); !ok {
+				return nil, fmt.Errorf("beklenmeyen signing method: %v", t.Header["alg"])
+			}
+			return rsaKey, nil
+		},
+		golangJWT.WithIssuer("https://appleid.apple.com"),
+		golangJWT.WithExpirationRequired(),
+	)
+	if err != nil || !token.Valid {
+		return nil, ErrAppleTokenInvalid
+	}
+
+	claims, ok := token.Claims.(*appleClaims)
+	if !ok || claims.Subject == "" {
+		return nil, ErrAppleTokenInvalid
+	}
+
+	// email_verified bool veya string olarak gelebilir
+	emailVerified := false
+	switch v := claims.EmailVerified.(type) {
+	case bool:
+		emailVerified = v
+	case string:
+		emailVerified = v == "true"
+	}
+
+	return &appleTokenInfo{
+		Sub:           claims.Subject,
+		Email:         claims.Email,
+		EmailVerified: emailVerified,
+	}, nil
+}
+
+// AppleLogin verifies an Apple identity token and returns JWT tokens
+func (s *Service) AppleLogin(ctx context.Context, req AppleLoginRequest) (*AuthResponse, int, error) {
+	// 1. Apple identity token'ı doğrula
+	info, err := verifyAppleToken(req.IdentityToken)
+	if err != nil {
+		return nil, http.StatusUnauthorized, ErrAppleTokenInvalid
+	}
+
+	// 2. Apple ID'ye göre kullanıcı ara
+	appleUser, err := s.repo.GetUserByAppleID(ctx, info.Sub)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	var userID string
+
+	if appleUser != nil {
+		// Kullanıcı zaten var
+		userID = appleUser.ID
+	} else {
+		// Email ile mevcut kullanıcı var mı kontrol et (aynı email ile kayıtlı olabilir)
+		email := info.Email
+		if email == "" {
+			email = req.Email // Flutter'dan gelen email (sadece ilk girişte Apple gönderir)
+		}
+
+		if email != "" {
+			existingUser, err := s.repo.GetUserByEmail(ctx, email)
+			if err != nil {
+				return nil, http.StatusInternalServerError, err
+			}
+			if existingUser != nil {
+				// Mevcut hesaba Apple ID bağla
+				if linkErr := s.repo.LinkAppleID(ctx, existingUser.ID, info.Sub); linkErr != nil {
+					return nil, http.StatusInternalServerError, linkErr
+				}
+				userID = existingUser.ID
+			}
+		}
+
+		// Kullanıcı hiç yoksa yeni oluştur
+		if userID == "" {
+			name := req.FullName
+			if name == "" {
+				name = email
+			}
+			if name == "" {
+				name = "Apple Kullanıcısı"
+			}
+			if email == "" {
+				// Apple private relay veya email gönderilmedi — bu durumda giriş yapılamaz
+				return nil, http.StatusUnauthorized, errors.New("email bilgisi alınamadı")
+			}
+
+			newID, err := s.repo.CreateAppleUser(ctx, name, email, info.Sub)
+			if err != nil {
+				return nil, http.StatusInternalServerError, err
+			}
+			userID = newID
+		}
+	}
+
+	// 3. JWT token'ları oluştur
+	accessToken, err := jwtpkg.GenerateAccessToken(userID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	refreshToken, err := jwtpkg.GenerateRefreshToken(userID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	if err := s.repo.SaveRefreshToken(ctx, userID, refreshToken, expiresAt); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return &AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+	}, http.StatusOK, nil
+}
+
+// ── Logout ─────────────────────────────────────────────────────────────────────
 
 func (s *Service) Logout(ctx context.Context, refreshToken string, accessToken string) (int, error) {
 	rt, err := s.repo.GetRefreshToken(ctx, refreshToken)

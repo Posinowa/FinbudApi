@@ -13,6 +13,13 @@ type Repository struct {
 	db *sqlx.DB
 }
 
+// AppleUser Apple Sign-In ile bulunan/oluşturulan kullanıcı
+type AppleUser struct {
+	ID      string  `db:"id"`
+	AppleID string  `db:"apple_id"`
+	Email   *string `db:"email"`
+}
+
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
@@ -148,6 +155,42 @@ func (r *Repository) GetPasswordResetToken(ctx context.Context, token string) (*
 func (r *Repository) MarkResetTokenUsed(ctx context.Context, token string) error {
 	query := `UPDATE password_reset_tokens SET used_at = NOW() WHERE token = $1`
 	_, err := r.db.ExecContext(ctx, query, token)
+	return err
+}
+
+// GetUserByAppleID retrieves a user by their Apple ID
+func (r *Repository) GetUserByAppleID(ctx context.Context, appleID string) (*AppleUser, error) {
+	var user AppleUser
+	query := `SELECT id, apple_id, email FROM users WHERE apple_id = $1`
+	err := r.db.GetContext(ctx, &user, query, appleID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// CreateAppleUser creates a new user from Apple Sign-In
+func (r *Repository) CreateAppleUser(ctx context.Context, name, email, appleID string) (string, error) {
+	var userID string
+	query := `
+		INSERT INTO users (full_name, email, apple_id)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	err := r.db.QueryRowContext(ctx, query, name, email, appleID).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+	return userID, nil
+}
+
+// LinkAppleID links an Apple ID to an existing user (email match)
+func (r *Repository) LinkAppleID(ctx context.Context, userID, appleID string) error {
+	query := `UPDATE users SET apple_id = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.db.ExecContext(ctx, query, appleID, userID)
 	return err
 }
 
