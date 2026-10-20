@@ -1,0 +1,18 @@
+# Cloud Run'da çalışan yönlendirici
+# Gelen her isteği gizli başlıkla Oracle sunucusuna iletir.
+# ORACLE_HOST ve PROXY_SECRET, Cloud Run servisinin ortam değişkenlerinden gelir; PORT'u Cloud Run verir.
+{
+	admin off
+	auto_https off
+	servers {
+		# Google'ın ön katmanı kullanıcının IP'sini X-Forwarded-For'a yazar; bu bilgi korunur
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+:{$PORT:8080} {
+	reverse_proxy https://{$ORACLE_HOST} {
+		header_up Host {upstream_hostport}
+		header_up X-Finbud-Proxy {$PROXY_SECRET}
+	}
+}
