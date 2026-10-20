@@ -1,0 +1,25 @@
+# Oracle sunucusundaki Caddy ayarı
+# ORACLE_HOST ve PROXY_SECRET, docker-compose.prod.yml üzerinden sunucudaki .env dosyasından gelir.
+{
+	servers {
+		# İstekler Cloud Run yönlendiricisinden gelir. Kullanıcının gerçek IP adresi
+		# X-Forwarded-For başlığında korunur; API'deki IP başına rate limit buna bağlı.
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+{$ORACLE_HOST} {
+	# Sadece gizli başlığı taşıyan (Cloud Run'dan gelen) istekler API'ye iletilir
+	@fromProxy header X-Finbud-Proxy {$PROXY_SECRET}
+
+	handle @fromProxy {
+		reverse_proxy api:8080 {
+			header_up -X-Finbud-Proxy
+		}
+	}
+
+	# Diğer her istek reddedilir
+	handle {
+		respond "Forbidden" 403
+	}
+}
