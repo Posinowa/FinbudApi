@@ -1,0 +1,70 @@
+# Oracle sunucusu için üretim compose dosyası
+# Kullanım (sadece sunucuda): docker compose -f docker-compose.prod.yml up -d
+# Yerel geliştirme için docker-compose.yml kullanılmaya devam eder.
+
+name: finbud-prod
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    # Canlıdaki Cloud SQL ile aynı ana sürüm (PostgreSQL 15)
+    image: postgres:15
+    container_name: finbud_prod_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    # Port dışarı açılmaz; veritabanına sadece API erişir
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  api:
+    build: .
+    container_name: finbud_prod_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+    # Sadece sunucunun içinden erişilebilir; dışarıya Caddy açılır
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *default-logging
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: finbud_prod_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ORACLE_HOST: ${ORACLE_HOST}
+      PROXY_SECRET: ${PROXY_SECRET}
+    volumes:
+      - ./deploy/oracle/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
