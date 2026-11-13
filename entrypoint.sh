@@ -14,7 +14,15 @@ else
 fi
 
 echo "▶ Migration'lar çalıştırılıyor..."
-migrate -path ./migrations -database "$DB_URL" up
+# migrate hata verirse bağlantı adresini (şifre dahil) loga yazıyor.
+# Çıktıyı yakalayıp şifreyi maskeleyerek yazdırıyoruz.
+MIGRATE_STATUS=0
+MIGRATE_OUT=$(migrate -path ./migrations -database "$DB_URL" up 2>&1) || MIGRATE_STATUS=$?
+echo "$MIGRATE_OUT" | sed -E 's#(postgres(ql)?://[^:/@]*:)[^@]*@#\1*****@#g'
+if [ "$MIGRATE_STATUS" -ne 0 ]; then
+  echo "❌ Migration başarısız"
+  exit 1
+fi
 echo "✅ Migration'lar tamam"
 
 echo "▶ Seed kontrol ediliyor..."
