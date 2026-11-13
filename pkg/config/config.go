@@ -13,7 +13,8 @@ type Config struct {
 	DBPort          string
 	DBUser          string
 	DBPassword      string
-	DBName          string
+    DBName          string
+	DBSSLMode       string
 	JWTSecret       string
 	AllowedOrigins  string
 	MaintenanceMode bool
@@ -42,6 +43,7 @@ func Load() (*Config, error) {
 		DBUser:          os.Getenv("DB_USER"),
 		DBPassword:      os.Getenv("DB_PASSWORD"),
 		DBName:          os.Getenv("DB_NAME"),
+		DBSSLMode:       getEnvOrDefault("DB_SSLMODE", "disable"),
 		JWTSecret:       os.Getenv("JWT_SECRET"),
 		AllowedOrigins:  os.Getenv("ALLOWED_ORIGINS"),
 		MaintenanceMode: os.Getenv("MAINTENANCE_MODE") == "true",
