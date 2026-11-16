@@ -2,7 +2,7 @@ package budget
 
 import (
 	"errors"
-        "fmt"
+	"fmt"
 	"time"
 
 	"github.com/Posinowa/FinbudApp/internal/category"
@@ -95,6 +95,7 @@ func ToBudgetResponse(b *BudgetWithSpent) BudgetResponse {
 
 	return response
 }
+
 // CreateBudgetRequest represents the request body for creating a budget
 type CreateBudgetRequest struct {
 	CategoryID  string  `json:"category_id" binding:"required,uuid"`

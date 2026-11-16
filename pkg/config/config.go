@@ -13,7 +13,7 @@ type Config struct {
 	DBPort          string
 	DBUser          string
 	DBPassword      string
-    DBName          string
+	DBName          string
 	DBSSLMode       string
 	JWTSecret       string
 	AllowedOrigins  string

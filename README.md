@@ -1,6 +1,6 @@
 # Finbud API
 
-Go ile yazılmış kişisel finans yönetimi REST API'si. Google Cloud Run üzerinde çalışır, PostgreSQL (Cloud SQL) kullanır.
+Go ile yazılmış kişisel finans yönetimi REST API'si. Google Cloud Run üzerinde çalışır, veritabanı olarak Neon (PostgreSQL 16) kullanır.
 
 ---
 
@@ -9,6 +9,44 @@ Go ile yazılmış kişisel finans yönetimi REST API'si. Google Cloud Run üzer
 ```
 https://finbud-api-197224562444.europe-west1.run.app
 ```
+
+---
+
+## Veritabanı (Neon)
+
+| Ayar | Değer |
+|---|---|
+| Sağlayıcı | [Neon](https://neon.com) (ücretsiz plan) |
+| Proje / veritabanı | `finbud` / `finbud` |
+| Bölge | AWS eu-central-1 (Frankfurt) |
+| PostgreSQL sürümü | 16 |
+
+Cloud Run'daki bağlantı ayarları:
+
+| Ortam değişkeni | Kaynak |
+|---|---|
+| `DB_HOST` | Neon'un doğrudan (pooler olmayan) adresi |
+| `DB_SSLMODE` | `require` |
+| `DB_USER` | Secret Manager → `NEON_DB_USER` |
+| `DB_PASSWORD` | Secret Manager → `NEON_DB_PASSWORD` |
+| `DB_NAME` | Secret Manager → `NEON_DB_NAME` |
+
+Notlar:
+- Neon, 5 dakika kullanılmayınca uykuya geçer. Uzun bir aradan sonraki ilk istek birkaç yüz milisaniye gecikebilir.
+- Uygulama boştaki bağlantıları 2 dakika sonra kapatır (`pkg/database/database.go`). Bu sayede Neon uykuya geçebilir ve ücretsiz kota korunur.
+- Yerel geliştirmede `DB_SSLMODE` boş bırakılır, varsayılan olarak `disable` kullanılır.
+
+### Yedek Alma
+
+Neon'un ücretsiz planı yalnızca son 6 saate geri dönmeye izin verir. Düzenli olarak (örneğin ayda bir) Cloud Shell'de yedek alınmalıdır:
+
+```bash
+export PGPASSWORD="$(gcloud secrets versions access latest --secret=NEON_DB_PASSWORD)"
+pg_dump "host=<NEON_HOST> user=finbud_user dbname=finbud sslmode=require" -Fc -f finbud-yedek-$(date +%Y%m%d).dump
+unset PGPASSWORD
+```
+
+`<NEON_HOST>` yerine Neon panelindeki host adresi yazılır. Yedek dosyaları repoya eklenmez (`.gitignore` içinde `*.dump`).
 
 ---
 
@@ -112,7 +150,7 @@ curl https://finbud-api-197224562444.europe-west1.run.app/status
 
 ### Gereksinimler
 
-- Go 1.21+
+- Go 1.26+
 - Docker & Docker Compose
 - [golang-migrate](https://github.com/golang-migrate/migrate) CLI
 
@@ -148,6 +186,18 @@ gcloud run deploy finbud-api \
   --region=europe-west1
 ```
 
+Alternatif olarak, image'ı Cloud Build'e derletmek için:
+
+```bash
+git clone https://github.com/Posinowa/FinbudApi.git finbud-deploy
+cd finbud-deploy
+gcloud run deploy finbud-api --source . --region europe-west1
+```
+
+Notlar:
+- Mevcut ortam değişkenleri ve secret'lar yeni revizyona aynen taşınır.
+- Önce test etmek için `--no-traffic --tag test` eklenir, test adresinde kontrol edildikten sonra `gcloud run services update-traffic finbud-api --region europe-west1 --to-latest` ile trafik verilir.
+- `.gitattributes` ve Dockerfile, `entrypoint.sh`'ın Windows'ta CRLF'ye dönüşüp container'ı bozmasını engeller.
 ---
 
 ## Sağlık Kontrolü

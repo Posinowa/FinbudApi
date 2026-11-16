@@ -187,6 +187,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (*AuthRespons
 		ExpiresIn:    3600,
 	}, http.StatusOK, nil
 }
+
 // ForgotPasswordRequest represents the request body for forgot password
 type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`

@@ -30,10 +30,10 @@ COPY --from=builder /app/seeder .
 COPY migrations ./migrations
 
 # Entrypoint scriptini kopyala
+# Windows'ta CRLF ile kaydedilse bile Linux'ta çalışması için \r karakterleri temizlenir
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
-
-# migrate CLI'ı kur (hedef mimariye göre: Cloud Run amd64, Oracle arm64)
+RUN sed -i 's/\r//g' entrypoint.sh && chmod +x entrypoint.sh
+# migrate CLI'ı kur (hedef mimariye göre, varsayılan amd64)
 RUN apk add --no-cache curl tar && \
     ARCH="${TARGETARCH:-amd64}" && \
     curl -fL "https://github.com/golang-migrate/migrate/releases/download/v4.18.1/migrate.linux-${ARCH}.tar.gz" \

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-        "github.com/google/uuid"
+	"github.com/google/uuid"
 
 	"github.com/Posinowa/FinbudApp/internal/category"
 )
@@ -177,6 +177,7 @@ func (s *Service) Delete(ctx context.Context, id string, userID string) error {
 	// Delete from database
 	return s.repo.Delete(ctx, id)
 }
+
 // GetByID retrieves a single budget by ID
 func (s *Service) GetByID(ctx context.Context, budgetID string, userID string) (*BudgetResponse, error) {
 	// Get budget from repository
