@@ -97,6 +97,7 @@ type CreateTransactionInput struct {
 	Date        string
 	Description *string
 }
+
 // TransactionFilter represents filter options for listing transactions
 type TransactionFilter struct {
 	Type       *string
@@ -127,4 +128,3 @@ type UpdateTransactionRequest struct {
 	Description *string  `json:"description,omitempty"`
 	Date        *string  `json:"date,omitempty"`
 }
-

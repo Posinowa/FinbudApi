@@ -73,6 +73,7 @@ func (s *Service) Create(ctx context.Context, input CreateTransactionInput) (*Tr
 		Category:    cat,
 	}, nil
 }
+
 // GetByID retrieves a transaction by ID with category
 func (s *Service) GetByID(ctx context.Context, id string, userID string) (*TransactionWithCategory, error) {
 	// Get transaction
@@ -96,6 +97,7 @@ func (s *Service) GetByID(ctx context.Context, id string, userID string) (*Trans
 
 	return result, nil
 }
+
 // GetAll retrieves all transactions for a user with filters
 func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionFilter) (*TransactionListResponse, error) {
 	// Set defaults
@@ -119,7 +121,7 @@ func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionF
 	var responseData []TransactionResponse
 	for _, t := range transactions {
 		twc := TransactionWithCategory{Transaction: t}
-		
+
 		// Get category for each transaction
 		if t.CategoryID != nil {
 			cat, err := s.categoryRepo.GetByID(ctx, *t.CategoryID)
@@ -127,7 +129,7 @@ func (s *Service) GetAll(ctx context.Context, userID string, filter TransactionF
 				twc.Category = cat
 			}
 		}
-		
+
 		responseData = append(responseData, ToTransactionResponse(&twc))
 	}
 
@@ -228,5 +230,3 @@ func (s *Service) Delete(ctx context.Context, id string, userID string) error {
 	// Delete from database
 	return s.repo.Delete(ctx, id)
 }
-
-

@@ -21,7 +21,7 @@ func Connect(cfg *config.Config) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("veritabanina baglanılamadı: %w", err)
 	}
-	
+
 	// Bağlantı havuzu: boşta kalan bağlantılar kapanır ki Neon uykuya geçebilsin
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(2)

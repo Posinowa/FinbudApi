@@ -3,7 +3,7 @@ package transaction
 import (
 	"context"
 	"fmt"
-        "log"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -114,7 +114,7 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 	var total int
 	err := r.db.GetContext(ctx, &total, countQuery, countArgs...)
 	if err != nil {
-                log.Printf("Count query error: %v", err)
+		log.Printf("Count query error: %v", err)
 		return nil, 0, err
 	}
 
@@ -127,7 +127,7 @@ func (r *Repository) GetAll(ctx context.Context, userID string, filter Transacti
 	var transactions []Transaction
 	err = r.db.SelectContext(ctx, &transactions, query, args...)
 	if err != nil {
-                log.Printf("Select query error: %v", err)
+		log.Printf("Select query error: %v", err)
 		return nil, 0, err
 	}
 

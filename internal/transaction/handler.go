@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"net/http"
-        "strconv"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -97,6 +97,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, ToTransactionResponse(transaction))
 }
+
 // GetByID godoc
 // @Summary      Get a transaction by ID
 // @Description  Retrieves a single transaction with category details
@@ -372,4 +373,3 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
-

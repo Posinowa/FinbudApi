@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrCategoryNotFound    = errors.New("kategori bulunamadi")
-	ErrForbidden           = errors.New("bu islemi yapmaya yetkiniz yok")
-	ErrDefaultCategory     = errors.New("varsayilan kategoriler silinemez")
+	ErrCategoryNotFound = errors.New("kategori bulunamadi")
+	ErrForbidden        = errors.New("bu islemi yapmaya yetkiniz yok")
+	ErrDefaultCategory  = errors.New("varsayilan kategoriler silinemez")
 )
 
 type Service struct {
@@ -100,6 +100,7 @@ func (s *Service) Delete(ctx context.Context, userID, categoryID string) (int, e
 
 	return http.StatusNoContent, nil
 }
+
 // GetByID retrieves a single category by ID
 func (s *Service) GetByID(ctx context.Context, userID string, categoryID string) (*Category, int, error) {
 	category, err := s.repo.GetByID(ctx, categoryID)

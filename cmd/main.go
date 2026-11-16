@@ -5,9 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Posinowa/FinbudApp/internal/auth"
-	"github.com/Posinowa/FinbudApp/pkg/email"
 	"github.com/Posinowa/FinbudApp/internal/budget"
 	"github.com/Posinowa/FinbudApp/internal/category"
 	"github.com/Posinowa/FinbudApp/internal/dashboard"
@@ -17,7 +15,9 @@ import (
 	"github.com/Posinowa/FinbudApp/pkg/blacklist"
 	"github.com/Posinowa/FinbudApp/pkg/config"
 	"github.com/Posinowa/FinbudApp/pkg/database"
+	"github.com/Posinowa/FinbudApp/pkg/email"
 	jwtpkg "github.com/Posinowa/FinbudApp/pkg/jwt"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -77,17 +77,15 @@ func main() {
 
 	// Transaction routes
 	transaction.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
-        
-       
+
 	// Budget routes
 	budget.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
 
 	// Recurring budget job — her ayın 1'inde tekrarlayan bütçeleri otomatik oluşturur
 	budget.StartRecurringJob(budget.NewRepository(db))
 
-         // Dashboard routes
-        dashboard.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
- 
+	// Dashboard routes
+	dashboard.RegisterRoutes(r.Group("/api/v1"), db, categoryRepo)
 
 	log.Printf("Sunucu :%s portunda baslatiliyor...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {

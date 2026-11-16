@@ -3,8 +3,8 @@ package category
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Posinowa/FinbudApp/pkg/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -21,7 +21,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	categories.Use(middleware.APIUserRateLimiter.UserMiddleware())
 	{
 		categories.GET("", h.GetAll)
-                categories.GET("/:id", h.GetByID)
+		categories.GET("/:id", h.GetByID)
 		categories.POST("", h.Create)
 		categories.PUT("/:id", h.Update)
 		categories.DELETE("/:id", h.Delete)
