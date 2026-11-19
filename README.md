@@ -1,6 +1,6 @@
 # Finbud API
 
-Go ile yazılmış kişisel finans yönetimi REST API'si. Google Cloud Run üzerinde çalışır, veritabanı olarak Neon (PostgreSQL 16) kullanır.
+Go ile yazılmış kişisel finans yönetimi REST API'si. Google Cloud Run üzerinde çalışır, veritabanı olarak Neon (PostgreSQL 18) kullanır.
 
 ---
 
@@ -19,7 +19,7 @@ https://finbud-api-197224562444.europe-west1.run.app
 | Sağlayıcı | [Neon](https://neon.com) (ücretsiz plan) |
 | Proje / veritabanı | `finbud` / `finbud` |
 | Bölge | AWS eu-central-1 (Frankfurt) |
-| PostgreSQL sürümü | 16 |
+| PostgreSQL sürümü | 18 |
 
 Cloud Run'daki bağlantı ayarları:
 
@@ -41,10 +41,16 @@ Notlar:
 Neon'un ücretsiz planı yalnızca son 6 saate geri dönmeye izin verir. Düzenli olarak (örneğin ayda bir) Cloud Shell'de yedek alınmalıdır:
 
 ```bash
+# Cloud Shell'deki pg_dump 16 sürümünde; Neon 18 olduğu için önce 18 sürümünü kur
+# (Cloud Shell her oturumda sıfırlandığı için her yedekten önce gerekir)
+sudo apt-get install -y postgresql-client-18
+
 export PGPASSWORD="$(gcloud secrets versions access latest --secret=NEON_DB_PASSWORD)"
-pg_dump "host=<NEON_HOST> user=finbud_user dbname=finbud sslmode=require" -Fc -f finbud-yedek-$(date +%Y%m%d).dump
+/usr/lib/postgresql/18/bin/pg_dump "host=<NEON_HOST> user=finbud_user dbname=finbud sslmode=require" -Fc -f finbud-yedek-$(date +%Y%m%d).dump
 unset PGPASSWORD
 ```
+
+Geri yüklemek için de aynı sürümdeki `/usr/lib/postgresql/18/bin/pg_restore` kullanılır.
 
 `<NEON_HOST>` yerine Neon panelindeki host adresi yazılır. Yedek dosyaları repoya eklenmez (`.gitignore` içinde `*.dump`).
 
